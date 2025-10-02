@@ -35,6 +35,8 @@ import {
   StarHalf,
   StarHalfIcon,
   Star,
+  Sun,
+  Moon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import useDarkMode from "../hooks/useDarkMode";
@@ -174,6 +176,15 @@ export default function WhatsAppLikeChat() {
     }
   }, [messages]);
 
+  useEffect(() => {
+    if (drawerOpen || infoOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+  }, [drawerOpen, infoOpen]);
+
+
   const send = () => {
     if (!text.trim()) return;
     const newMsg = {
@@ -247,7 +258,14 @@ export default function WhatsAppLikeChat() {
                     <HeaderIcon tooltip="More"><MoreHorizontal className="h-6 w-6" /></HeaderIcon>
                   </span>
                   <div className="hidden lg:block pl-2">
-                    <Switch checked={dark} onChange={() => setDark(!dark)} className="scale-90" />
+                    {/* <Switch checked={dark} onChange={() => setDark(!dark)} className="scale-90" /> */}
+                    <div
+                      onClick={() => setDark(!dark)}
+                      className="cursor-pointer flex items-center gap-2 p-2 rounded-full bg-gray-200 dark:bg-gray-800"
+                    >
+                      {dark ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-gray-900"  strokeWidth={3.0} />}
+                    </div>
+
                   </div>
                 </div>
               </div>
@@ -309,6 +327,7 @@ export default function WhatsAppLikeChat() {
             <SidebarContent
               active={active}
               setActive={(c) => { setActive(c); setDrawerOpen(false); }}
+              onClose={() => setDrawerOpen(false)}
             />
           </Drawer>
 
@@ -329,12 +348,19 @@ export default function WhatsAppLikeChat() {
   return AppShell;
 }
 
-function SidebarContent({ active, setActive }) {
+function SidebarContent({ active, setActive, onClose }) {
   return (
     <div className="h-full flex flex-col">
 
       {/* Search */}
-      <div className="px-3 py-3 border-b dark:border-white/10 border-gray-200 my-8">
+      <div className="ml-auto text-lg p-3">
+        {onClose && (
+          <IconButton variant="text" size="sm" className="rounded-full" onClick={onClose}>
+            <X className="h-5 w-5" />
+          </IconButton>
+        )}
+      </div>
+      <div className="px-3 py-4 border-b dark:border-white/10 border-gray-200">
         <div className="flex items-center gap-2 bg-gray-200 dark:bg-black-200 rounded-full px-3 py-2 border dark:border-white/10 border-gray-200">
           <Search className="h-4 w-4 text-gray-400" />
           <input
@@ -380,8 +406,8 @@ function ContactInfo({ contact, onClose }) {
   const [dark, setDark] = useDarkMode();
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="px-4 py-3 border-b dark:border-white/10 border-gray-200 flex items-center justify-between">
+    <div className="h-screen flex flex-col overflow-y-auto">
+      <div className="px-4 py-5 border-b dark:border-white/10 border-gray-200 flex items-center justify-between">
         <h3 className="font-bold text-sm text-black-200 dark:text-gray-300">Status</h3>
         {onClose ? (
           <IconButton variant="text" size="sm" className="rounded-full" onClick={onClose}>
@@ -390,7 +416,7 @@ function ContactInfo({ contact, onClose }) {
         ) : null}
       </div>
 
-      <div className="flex flex-col py-3">
+      {/* <div className="flex flex-col py-3 p-2">
         <div className="flex items-center justify-between">
           <Radio name="type" label="Online" defaultChecked />
           <div className="rounded-full bg-green-500 w-5 h-5" />
@@ -399,9 +425,30 @@ function ContactInfo({ contact, onClose }) {
           <Radio name="type" label="Offline" />
           <div className="rounded-full bg-red-500 w-5 h-5" />
         </div>
+      </div> */}
+
+      {/* User status */}
+      {/* <div className="flex flex-col py-7 px-5 space-y-2 ">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Online</p>
+          <div className="rounded-full w-4 h-4 bg-green-500" />
+        </div>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Offline</p>
+          <div className="rounded-full w-4 h-4 bg-red-500" />
+        </div>
+      </div> */}
+
+
+      <div className="flex p-7 justify-between">
+        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 flex">
+          {contact.offline ? "Online" : "Offline"}
+        </p>
+        <div className={`rounded-full w-4 h-4 ${contact.offline ? "bg-green-500" : "bg-red-500"}`} />
       </div>
 
-      <div className="sm:hidden">
+
+      <div className="sm:hidden px-3 p-2">
         <Switch checked={dark} onChange={() => setDark(!dark)} className="scale-90" />
       </div>
 
@@ -427,7 +474,8 @@ function ContactInfo({ contact, onClose }) {
         </div>
       </div>
 
-      <div className="px-6 py-4 space-y-3 overflow-y-auto">
+      {/* footer */}
+      <div className="flex-1 flex flex-col overflow-y-auto px-6 py-4 space-y-3">
         <div className="text-gray-400 text-sm">Media, links and docs</div>
         <div className="grid grid-cols-4 gap-2">
           {contact.media?.map((src, i) => (
@@ -449,11 +497,25 @@ function ContactInfo({ contact, onClose }) {
           <div className="text-gray-400 text-sm">Disappearing messages</div>
           <div className="text-gray-200">Off</div>
         </div>
-
-        <div className="pt-6 space-y-2">
-          <Button variant="text" className="justify-start text-red-400">LogOut</Button>
-        </div>
       </div>
+
+      <div className="sm:hidden px-6 py-4 border-t border-gray-200 dark:border-white/10 bg-white dark:bg-black-100">
+        <Button
+          variant="text"
+          className="justify-start text-red-400 w-full text-md"
+        // onClick={() => console.log("Logout clicked")}
+        >
+          LogOut
+        </Button>
+      </div>
+
+      <div className="hidden sm:block px-6 py-4 pt-6">
+        <Button variant="text" className="justify-start text-red-400 w-full text-md">
+          LogOut
+        </Button>
+      </div>
+
+
     </div>
   );
 }

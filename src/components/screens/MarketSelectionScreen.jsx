@@ -6,14 +6,7 @@ import Message from "../common/Message";
 import Onboarding from "../common/Onboarding";
 import CustomInput from "../common/CustomInput";
 
-const markets = [
-  "Ikeja Computer Village",
-  "Balogun Market",
-  "Mile 12 Market",
-  "Yaba Market",
-  "Lekki Market",
-  "Surulere Market",
-];
+const markets = [];
 
 export default function MarketSelectionScreen({ service, onSelectMarket, darkMode, toggleDarkMode }) {
   const initialMessages = [
@@ -180,21 +173,6 @@ export default function MarketSelectionScreen({ service, onSelectMarket, darkMod
         mapInstanceRef.current = null;
         if (mapRef.current) mapRef.current.innerHTML = "";
       }
-
-
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now(),
-            from: "them",
-            text: "What Transport Medium do you want to handle your errand?   Select from the options below:  ",
-            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            status: "delivered",
-          },
-        ]);
-        setShowVehicleOptions(true);
-      }, 1000);
     }
   };
 
@@ -212,8 +190,23 @@ export default function MarketSelectionScreen({ service, onSelectMarket, darkMod
     ]);
     setShowVehicleOptions(false);
 
-    // trigger next step to parent
-    // setTimeout(() => onSelectMarket(type), 800);
+    const botResponse = {
+      id: Date.now() + 1,
+      from: "them",
+      text: "In progress...",
+      status: "delivered",
+    };
+
+    timeoutRef.current = setTimeout(() => {
+      setMessages((p) => [...p, botResponse]);
+
+      // clear bot message
+      setTimeout(() => {
+        setMessages(prev => prev.filter(msg => msg.text !== "In progress..."));
+        onSelectMarket(type);
+      }, 900);
+    }, 1200);
+
   };
 
   const send = (type, text) => {
@@ -237,12 +230,27 @@ export default function MarketSelectionScreen({ service, onSelectMarket, darkMod
       status: "delivered",
     };
 
-    // timeoutRef.current = setTimeout(() => {
-    //   setMessages((p) => [...p, botResponse]);
-    //   timeoutRef.current = setTimeout(() => {
-    //     onSelectMarket(type === "map" ? text : type);
-    //   }, 800);
-    // }, 1400);
+    timeoutRef.current = setTimeout(() => {
+      setMessages((p) => [...p, botResponse]);
+
+      // bot message
+      setTimeout(() => {
+        setMessages(prev => prev.filter(msg => msg.text !== "In progress..."));
+
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            from: "them",
+            text: "What Transport Medium do you want to handle your errand? Select from the options below:",
+            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            status: "delivered",
+          },
+        ]);
+        setShowVehicleOptions(true);
+      }, 1000);
+    }, 1700);
   };
 
   const filteredMarkets = markets.filter((market) =>
@@ -254,14 +262,14 @@ export default function MarketSelectionScreen({ service, onSelectMarket, darkMod
       <Onboarding darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
         <div className="w-full h-full flex flex-col">
           <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b">
-              <Button variant="text" onClick={() => {
-                setShowMap(false);
-                setFindOnMap(true);
-              }
-              } className="flex items-center">
-                <X className="h-4 w-4 mr-2" />
-                Close
-              </Button>
+            <Button variant="text" onClick={() => {
+              setShowMap(false);
+              setFindOnMap(true);
+            }
+            } className="flex items-center">
+              <X className="h-4 w-4 mr-2" />
+              Close
+            </Button>
             <Button
               onClick={handleMapSelection}
               disabled={!selectedPlace}

@@ -55,7 +55,6 @@ export default function ErrandServiceApp() {
             toggleDarkMode={() => setDark(!dark)}
           />
         );
-
       case "service_selection":
         return (
           <ServiceSelectionScreen

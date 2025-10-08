@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import useDarkMode from "../hooks/useDarkMode";
-import UserProfile from "../components/common/UserProfile";
+import { useNavigate } from "react-router-dom";
 
 // --- Mock Data ---
 const contacts = [
@@ -158,11 +158,8 @@ export default function WhatsAppLikeChat() {
   const [messages, setMessages] = useState(initialMessages);
   const [drawerOpen, setDrawerOpen] = useState(false); // mobile left sidebar
   const [infoOpen, setInfoOpen] = useState(false); // mobile right info panel
-  const [deliveryMethods, setDeliveryMethods] = useState(false);
-  const [userProfile, setUserProfile] = useState(false);
   const [text, setText] = useState("");
   const listRef = useRef(null);
-  const [more, setMore] = useState(false);
 
   const pickUp = () => {
     setText('Pick Up')
@@ -215,9 +212,6 @@ export default function WhatsAppLikeChat() {
     }, 1200);
   };
 
-  const handleClickMore = () => {
-    setUserProfile(UserProfile)
-  }
 
   const AppShell = useMemo(
     () => (
@@ -268,15 +262,14 @@ export default function WhatsAppLikeChat() {
                   <span className="bg-gray-1000 dark:bg-black-200 rounded-full w-10 h-10 flex items-center justify-center">
                     <HeaderIcon tooltip="Voice call"><Phone className="h-6 w-6" /></HeaderIcon>
                   </span>
-                  <span onClick={() => handleClickMore()}
+                  <span
                     className="bg-gray-1000 dark:bg-black-200 rounded-full w-10 h-10 flex items-center justify-center">
                     <HeaderIcon tooltip="More"><MoreHorizontal className="h-6 w-6" /></HeaderIcon>
                   </span>
                   <div className="hidden lg:block pl-2">
-                    {/* <Switch checked={dark} onChange={() => setDark(!dark)} className="scale-90" /> */}
                     <div
                       onClick={() => setDark(!dark)}
-                      className="cursor-pointer flex items-center gap-2 p-2 rounded-full"
+                      className="cursor-pointer bg-gray-1000 dark:bg-black-200 rounded-full w-10 h-10 flex items-center justify-center"
                     >
                       {dark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5 text-gray-900" strokeWidth={3.0} />}
                     </div>
@@ -418,56 +411,43 @@ function SidebarContent({ active, setActive, onClose }) {
 
 function ContactInfo({ contact, onClose }) {
   const [dark, setDark] = useDarkMode();
+  const navigate = useNavigate();
+
 
   return (
-    <div className="h-screen flex flex-col overflow-y-auto gap-10 marketSelection">
+    <div className="h-screen flex flex-col overflow-y-auto gap-6 marketSelection">
       <div>
-        <div className="px-4 py-5 border-b dark:border-white/10 border-gray-200 flex items-center justify-between">
-          <h3 className="font-bold text-sm text-black-200 dark:text-gray-300">History</h3>
-          {onClose ? (
-            <IconButton variant="text" size="sm" className="rounded-full" onClick={onClose}>
-              <X className="h-5 w-5" />
-            </IconButton>
-          ) : null}
-        </div>
-        <p className="text-center capitalize text-black-200 dark:text-gray-300 p-2">no history yet</p>
+        {onClose ? (
+          <IconButton variant="text" size="sm" className="rounded-full" onClick={onClose}>
+            <X className="h-5 w-5" />
+          </IconButton>
+        ) : null}
       </div>
 
-      {/* locations */}
-      <div className="border-t dark:border-white/10 border-gray-200">
-        <h3 className="px-4 py-5 font-bold text-sm text-black-200 dark:text-gray-300">Locations</h3>
-        <div className="border-t dark:border-white/10 border-gray-200"></div>
-
-        <p className="text-center capitalize text-black-200 dark:text-gray-300 p-2">no locations yet</p>
+      <div className="cursor-pointer hover:bg-gray-200 dark:hover:bg-black-200 transition-colors"
+        onClick={() => navigate('/profile')}>
+        <h3 className="px-4 py-5 font-bold text-md text-black-200 dark:text-gray-300">Profile</h3>
       </div>
 
-      <div className="border-t dark:border-white/10 border-gray-200">
-        <h3 className="px-4 py-5 font-bold text-sm text-black-200 dark:text-gray-300">Wallet</h3>
-        <div className="border-t dark:border-white/10 border-gray-200"></div>
-
-        <p className="text-center capitalize text-black-200 dark:text-gray-300 p-2">no balance</p>
+      <div className="cursor-pointer hover:bg-gray-200 dark:hover:bg-black-200 transition-colors"
+        onClick={() => navigate('/locations')}>
+        <h3 className="px-4 py-5 font-bold text-md text-black-200 dark:text-gray-300">Locations</h3>
       </div>
 
-      <div className="border-t dark:border-white/10 border-gray-200">
-        <h3 className="px-4 py-5 font-bold text-sm text-black-200 dark:text-gray-300">Ongoing Orders</h3>
-        <div className="border-t dark:border-white/10 border-gray-200"></div>
-
-        <p className="text-center capitalize text-black-200 dark:text-gray-300 p-2">no ongoing orders yet</p>
+      <div className="cursor-pointer hover:bg-gray-200 dark:hover:bg-black-200 transition-colors"
+        onClick={() => navigate('/wallet')}>
+        <h3 className="px-4 py-5 font-bold text-md text-black-200 dark:text-gray-300">Wallet</h3>
       </div>
 
-      <div className="border-t dark:border-white/10 border-gray-200"></div>
-      <div className="flex py-5">
+      <div className="cursor-pointer hover:bg-gray-200 dark:hover:bg-black-200 transition-colors"
+        onClick={() => navigate('/locations')}>
+        <h3 className="px-4 py-5 font-bold text-md text-black-200 dark:text-gray-300">Ongoing Orders</h3>
+      </div>
+
+      <div className="flex py-5 flex-col gap-8">
         <p className="text-md font-medium px-4 text-black-200 dark:text-gray-300 rounded-lg p-4 border border-gray-800 mr-auto ml-3">Start new order</p>
         <p className="text-md font-medium px-4 text-red-400 dark:text-red-400 rounded-lg p-4 border border-gray-800 mr-auto ml-3">Cancel order</p>
       </div>
-
-
-      {/* <div className="border-t dark:border-white/10 border-gray-200">
-        <h3 className="px-4 py-5 font-bold text-sm text-black-200 dark:text-gray-300">Profile</h3>
-        <div className="border-t dark:border-white/10 border-gray-200"></div>
-
-        <p className="text-center capitalize text-black-200 dark:text-gray-300 p-2">profile</p>
-      </div> */}
     </div>
   );
 }

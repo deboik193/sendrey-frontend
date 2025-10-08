@@ -444,9 +444,12 @@ function ContactInfo({ contact, onClose }) {
         <h3 className="px-4 py-5 font-bold text-md text-black-200 dark:text-gray-300">Ongoing Orders</h3>
       </div>
 
-      <div className="flex py-5 flex-col gap-8">
-        <p className="text-md font-medium px-4 text-black-200 dark:text-gray-300 rounded-lg p-4 border border-gray-800 mr-auto ml-3">Start new order</p>
-        <p className="text-md font-medium px-4 text-red-400 dark:text-red-400 rounded-lg p-4 border border-gray-800 mr-auto ml-3">Cancel order</p>
+      <div className="cursor-pointer hover:bg-gray-200 dark:hover:bg-black-200 transition-colors">
+        <h3 className="px-4 py-5 font-bold text-md text-black-200 dark:text-gray-300">Start new order</h3>
+      </div>
+
+      <div className="cursor-pointer hover:bg-gray-200 dark:hover:bg-black-200 transition-colors">
+        <p className="px-4 py-5 text-md font-medium px-4 text-red-400 dark:text-red-400 ">Cancel order</p>
       </div>
     </div>
   );

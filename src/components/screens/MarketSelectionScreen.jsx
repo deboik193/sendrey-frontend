@@ -338,7 +338,7 @@ export default function MarketSelectionScreen({ service, onSelectMarket, darkMod
               { type: "Runner", icon: FaWalking },
               { type: "Motorcycle", icon: FaMotorcycle}
             ].map(({ type, icon: Icon }) => (
-              <Button
+              <Button 
                 key={type}
                 variant="outlined"
                 className="flex flex-col p-3"

@@ -89,15 +89,16 @@ export default function OnboardingScreen({ userType, onComplete, darkMode, toggl
       }, 800);
     } else {
       // All questions answered
+       console.log("✅ All questions answered:", newData);
       timeoutRef.current = setTimeout(() => {
         onComplete(newData);
       }, 800);
     }
   };
 
-  const send = () => {
-    if (!text.trim()) return;
-    handleAnswer(text.trim());
+  const send = (type, message = text) => {
+    if (!message.trim()) return;
+    handleAnswer(message.trim());
   };
 
   return (

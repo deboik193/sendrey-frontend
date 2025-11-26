@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardBody, Chip } from "@material-tailwind/react";
-import { X, Bell } from "lucide-react";
+import { X, MapPin } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function RunnerNotifications({
@@ -40,7 +40,7 @@ export default function RunnerNotifications({
       />
 
       {/* Bottom Sheet */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center px-4">
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center">
         <motion.div
           initial={{ y: "100%" }}
           animate={{ y: 0 }}
@@ -50,90 +50,71 @@ export default function RunnerNotifications({
             } rounded-t-3xl shadow-2xl max-h-[80vh] w-full max-w-4xl flex flex-col`}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-bold text-black dark:text-white">
-                Available Service Requests ({requests.length})
-              </h2>
-            </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-            >
-              <X className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-            </button>
+
+          <div className="flex justify-center p-3">
+            <h2 className="text-xl text-center max-w-lg font-bold text-black dark:text-white">
+              You have received an order
+              {/* ({requests.length}) */}
+            </h2>
           </div>
 
           {/* Notifications List */}
-          <div className="flex-1 overflow-y-auto p-4">
-            <div className="max-w-md mx-auto space-y-3">
+          <div className="flex-1 overflow-y-auto p-3">
+            <div className="max-w-lg mx-auto">
               <AnimatePresence>
-                {requests.map((user) => (
-                  <motion.div
-                    key={user._id || user.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Card
-                      className="cursor-pointer hover:shadow-lg transition-shadow border-2 border-primary"
+                {requests.map((user) => {
+                  return (
+                    <motion.div
+                      key={user._id || user.id}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.2 }}
                     >
-                      <CardBody className="p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h4 className="font-bold text-lg text-black">
-                              {user.firstName} {user.lastName || ""}
-                            </h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              Phone: {user.phone}
+                      <Card
+                        className="dark:text-gray-300 dark:bg-black-100 shadow-none"
+                      >
+                        <CardBody className="p-4 text-black">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex gap-2 flex-col">
+                              <div>
+                                <p className="text-lg">Sender's Name</p>
+                                <p className="text-2xl font-bold ">{user.firstName} {user.lastName || ""}</p>
+                              </div>
+                              <div>
+                                <p className="text-lg">Pickup/Dropoff</p>
+                                <p>delivery in 20 mins. </p>
+                              </div>
+                              <div>
+                                <p className="text-lg">Location: </p>
+                                <div className="border border-2 rounded-md border-gray-300 h-10 w-100 p-2 text-start text-sm text-blue-400"> No 12 dele, Town Square Lagos</div> {/* logo */}
+                              </div>
+                              <div>
+                                <p className="text-lg">Delivery Location: </p>
+                                <div className="flex items-center gap-2">
+                                  <div className="border border-2 rounded-md border-gray-300 h-10 w-100 p-2 text-start text-sm text-red-400"> No 40 dele, Allen Square-Otawu Lagos</div> <span><MapPin /></span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-10 px-5 mt-5">
+                            <p className="cursor-pointer font-medium text-lg text-white bg-blue-400 border rounded-md px-3 p-1"
+                              onClick={() => handlePickService(user)}
+                            >
+                              Accept
+                            </p>
+                            <p className="cursor-pointer font-medium text-lg text-gray-400 border border-gray-300 rounded-md px-3 p-1"
+                              onClick={() => setIsOpen(false)}
+                            >
+                              Decline
                             </p>
                           </div>
-                          <Chip
-                            value="AVAILABLE"
-                            size="sm"
-                            color="green"
-                            className="animate-pulse"
-                          />
-                        </div>
-
-                        <div className="flex gap-2 mt-3">
-                          <Chip
-                            value={user.serviceType === "pick-up" ? "Pick Up" : "Run Errand"}
-                            size="sm"
-                            color="blue"
-                            className="capitalize"
-                          />
-                          <Chip
-                            value={user.fleetType}
-                            size="sm"
-                            color="gray"
-                            className="capitalize"
-                          />
-                        </div>
-
-                        <div className="mt-3 flex justify-between items-center text-sm">
-                          <span className="text-gray-600 dark:text-gray-400">
-                            Distance: ~{user.distance || "Nearby"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between px-5">
-                          <p className="font-medium text-green-400"
-                            onClick={() => handlePickService(user)}
-                          >
-                            Accept
-                          </p>
-                          <p className="font-medium text-red-400"
-                            onClick={() => setIsOpen(false)}
-                          >
-                            Reject
-                          </p>
-                        </div>
-                      </CardBody>
-                    </Card>
-                  </motion.div>
-                ))}
+                        </CardBody>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
             </div>
           </div>

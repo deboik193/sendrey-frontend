@@ -14,6 +14,7 @@ export default function OnboardingScreen({ userType, onComplete, darkMode, toggl
   const [canResendOtp, setCanResendOtp] = useState(false);
   const listRef = useRef(null);
   const timeoutRef = useRef(null);
+  
   const isProcessing = messages.some(msg => msg.text === "In progress...") && !showOtpStep || registrationSuccess;
 
   const questions = userType === 'user'

@@ -73,7 +73,7 @@ export default function RunnerSelectionScreen({
         <div
           className={`${darkMode ? "dark:bg-black-100" : "bg-white"} rounded-t-3xl shadow-2xl max-h-[80vh] w-full max-w-4xl flex flex-col transition-transform duration-300 ease-out ${isVisible ? "translate-y-0" : "translate-y-full"}`}
         >
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between p-4">
             <h2 className="text-xl font-bold text-black dark:text-white">
               Available Runners Nearby 
             </h2>
@@ -87,14 +87,6 @@ export default function RunnerSelectionScreen({
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
-            {/* Location Error */}
-            {/* {locationError && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
-                <p className="text-red-600 dark:text-red-400 text-center">
-                  {locationError}
-                </p>
-              </div>
-            )} */}
 
             {/* Loading State */}
             {loading && (
@@ -103,15 +95,6 @@ export default function RunnerSelectionScreen({
                 <p className="text-gray-500">Finding nearby runners...</p>
               </div>
             )}
-
-            {/* API Error */}
-            {/* {error && !loading && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
-                <p className="text-red-600 dark:text-red-400 text-center">
-                  {error.message || 'Failed to fetch runners'}
-                </p>
-              </div>
-            )} */}
 
             {/* Runners List */}
             {!loading && !locationError && nearbyRunners.length > 0 && (

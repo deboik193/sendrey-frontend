@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button, Input } from "@material-tailwind/react";
-import { Search, MapPin, X, } from "lucide-react";
+import { Search, MapPin, X } from "lucide-react";
 
 import Message from "../common/Message";
 import Onboarding from "../common/Onboarding";
@@ -8,7 +8,13 @@ import CustomInput from "../common/CustomInput";
 
 const markets = [];
 
-export default function MarketSelectionScreen({ service, onSelectMarket, darkMode, toggleDarkMode }) {
+export default function MarketSelectionScreen({
+  service,
+  onSelectMarket,
+  darkMode,
+  toggleDarkMode,
+  onChooseDeliveryClick,
+}) {
   const initialMessages = [
     { id: 1, from: "them", text: "Welcome!", time: "12:24 PM", status: "read" },
     {
@@ -28,9 +34,10 @@ export default function MarketSelectionScreen({ service, onSelectMarket, darkMod
     {
       id: 4,
       from: "them",
-      text: service?.service?.toLowerCase() === "run errand"
-        ? "Which market would you like us to go to?"
-        : "Which location do you want to pickup?",
+      text:
+        service?.service?.toLowerCase() === "run errand"
+          ? "Which market would you like us to go to?"
+          : "Which location do you want to pickup?",
       time: "12:25 PM",
       status: "delivered",
     },
@@ -38,6 +45,7 @@ export default function MarketSelectionScreen({ service, onSelectMarket, darkMod
 
   const [searchTerm, setSearchTerm] = useState("");
   const [messages, setMessages] = useState(initialMessages);
+
   const [showMap, setShowMap] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [findOnMap, setFindOnMap] = useState(true);
@@ -47,12 +55,16 @@ export default function MarketSelectionScreen({ service, onSelectMarket, darkMod
   const listRef = useRef(null);
   const timeoutRef = useRef(null);
   const [showCustomInput, setShowCustomInput] = useState(true);
+  const [pendingDeliverySelection, setPendingDeliverySelection] = useState(false);
+  const [pickupLocation, setPickupLocation] = useState(null);
+  const [deliveryLocation, setDeliveryLocation] = useState(null);
 
   useEffect(() => {
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
     }
   }, [messages]);
+
 
   useEffect(() => {
     const initializeMap = () => {
@@ -106,32 +118,28 @@ export default function MarketSelectionScreen({ service, onSelectMarket, darkMod
             name: results[0].formatted_address,
           };
           setSelectedPlace(place);
-          if (markerRef.current) markerRef.current.setMap(null);
-          markerRef.current = new window.google.maps.Marker({
-            position: clickedLocation,
-            map: map,
-            title: "Selected Location",
-          });
         } else {
           const place = {
             lat: clickedLocation.lat,
             lng: clickedLocation.lng,
-            address: `Location (${clickedLocation.lat.toFixed(6)}, ${clickedLocation.lng.toFixed(6)})`,
-            name: `Location (${clickedLocation.lat.toFixed(6)}, ${clickedLocation.lng.toFixed(6)})`,
+            address: `Location (${clickedLocation.lat}, ${clickedLocation.lng})`,
+            name: `Location (${clickedLocation.lat}, ${clickedLocation.lng})`,
           };
           setSelectedPlace(place);
-          if (markerRef.current) markerRef.current.setMap(null);
-          markerRef.current = new window.google.maps.Marker({
-            position: clickedLocation,
-            map: map,
-            title: "Selected Location",
-          });
         }
+
+        if (markerRef.current) markerRef.current.setMap(null);
+        markerRef.current = new window.google.maps.Marker({
+          position: clickedLocation,
+          map: map,
+          title: "Selected Location",
+        });
       });
     });
 
     const input = document.getElementById("map-search");
     const searchBox = new window.google.maps.places.SearchBox(input);
+
     map.addListener("bounds_changed", () => {
       searchBox.setBounds(map.getBounds());
     });
@@ -147,8 +155,10 @@ export default function MarketSelectionScreen({ service, onSelectMarket, darkMod
         lng: place.geometry.location.lng(),
       };
       setSelectedPlace(selectedPlace);
+
       map.setCenter(place.geometry.location);
       map.setZoom(16);
+
       if (markerRef.current) markerRef.current.setMap(null);
       markerRef.current = new window.google.maps.Marker({
         position: place.geometry.location,
@@ -159,43 +169,92 @@ export default function MarketSelectionScreen({ service, onSelectMarket, darkMod
   };
 
 
-  // select map
   const handleMapSelection = () => {
-    if (selectedPlace) {
-      const locationText = selectedPlace.name || selectedPlace.address || "Selected location";
-      send("map", locationText);
-      setShowMap(false);
-      setSelectedPlace(null);
+    if (!selectedPlace) return;
 
-      if (markerRef.current) markerRef.current.setMap(null);
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current = null;
-        if (mapRef.current) mapRef.current.innerHTML = "";
-      }
+    const locationText = selectedPlace.name || selectedPlace.address;
+
+    // DELIVERY location
+    send("map", locationText, "delivery");
+
+    setDeliveryLocation(locationText);
+
+    setShowMap(false);
+    setSelectedPlace(null);
+    setPendingDeliverySelection(false);
+
+    if (markerRef.current) markerRef.current.setMap(null);
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current = null;
+      if (mapRef.current) mapRef.current.innerHTML = "";
     }
   };
 
 
-
-  const send = (type, text) => {
+  const send = (type, text, source) => {
     if (!text || typeof text !== "string") return;
-    text = text.trim();
-    if (!text) return;
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+    const msgText = text.trim();
+
+    //pickup (Message 4 response)
+    if (!pickupLocation && !pendingDeliverySelection && source !== "delivery") {
+      setPickupLocation(msgText);
+    }
+
+    // store delivery location
+    if (source === "delivery") {
+      setDeliveryLocation(msgText);
+    }
 
     const newMsg = {
       id: Date.now(),
       from: "me",
-      text: text.trim(),
+      text: msgText,
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       status: "sent",
     };
-    setMessages((p) => [...p, newMsg]);
+
+    setMessages((prev) => {
+      const updated = [...prev, newMsg];
+
+      const lastBot = prev[prev.length - 1];
+      const alreadyHasFive = prev.some((m) => m.id === 5);
+
+      if (lastBot?.id === 4 && !alreadyHasFive) {
+        setTimeout(() => {
+          setMessages((p) => {
+            // double-guard to avoid duplicates
+            if (p.some((m) => m.id === 5)) return p;
+
+            return [
+              ...p,
+              {
+                id: 5,
+                from: "them",
+                text: "Set your delivery location. Choose Delivery Location",
+                time: new Date().toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+                status: "delivered",
+                hasChooseDeliveryButton: true,
+              },
+            ];
+          });
+        }, 2100); 
+      }
+
+      return updated;
+    });
+
+
 
     setShowCustomInput(false);
     setFindOnMap(false);
 
+    // fake bot “processing”
     const botResponse = {
       id: Date.now() + 1,
       from: "them",
@@ -207,12 +266,25 @@ export default function MarketSelectionScreen({ service, onSelectMarket, darkMod
       setMessages((p) => [...p, botResponse]);
 
       setTimeout(() => {
-        setMessages(prev => prev.filter(msg => msg.text !== "In progress..."));
-        // Navigate to vehicle selection
-        onSelectMarket(text); // Pass location, 
+        setMessages((prev) => prev.filter((msg) => msg.text !== "In progress..."));
+
+        // navigate after delivery is selected
+        if (source === "delivery") {
+          onSelectMarket({
+            pickup: pickupLocation,
+            delivery: text,
+          });
+        }
       }, 900);
     }, 1200);
   };
+
+
+  const handleChooseDeliveryClick = () => {
+    setPendingDeliverySelection(true);
+    setShowMap(true);
+  };
+
 
   const filteredMarkets = markets.filter((market) =>
     market.toLowerCase().includes(searchTerm.toLowerCase())
@@ -223,11 +295,14 @@ export default function MarketSelectionScreen({ service, onSelectMarket, darkMod
       <Onboarding darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
         <div className="w-full h-full flex flex-col">
           <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b">
-            <Button variant="text" onClick={() => {
-              setShowMap(false);
-              setFindOnMap(true);
-            }
-            } className="flex items-center">
+            <Button
+              variant="text"
+              onClick={() => {
+                setShowMap(false);
+                setFindOnMap(true);
+              }}
+              className="flex items-center"
+            >
               <X className="h-4 w-4 mr-2" />
               Close
             </Button>
@@ -239,6 +314,7 @@ export default function MarketSelectionScreen({ service, onSelectMarket, darkMod
               Select Location
             </Button>
           </div>
+
           <div className="p-4 bg-white dark:bg-gray-800 border-b">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -275,11 +351,15 @@ export default function MarketSelectionScreen({ service, onSelectMarket, darkMod
     <Onboarding darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
       <div
         ref={listRef}
-        className="w-full max-w-2xl mx-auto p-3 relative overflow-y-scroll marketSelection ">
+        className="w-full max-w-2xl mx-auto p-3 relative overflow-y-scroll marketSelection"
+      >
         <div>
           {messages.map((m) => (
             <p className="mx-auto" key={m.id}>
-              <Message m={m} />
+              <Message
+                m={m}
+                onChooseDeliveryClick={m.hasChooseDeliveryButton ? handleChooseDeliveryClick : undefined}
+              />
             </p>
           ))}
         </div>
@@ -294,10 +374,12 @@ export default function MarketSelectionScreen({ service, onSelectMarket, darkMod
               showMic={false}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder={`Search for a ${service?.service?.toLowerCase() === "run errend" ? "location" : "market"
+              placeholder={`Search for a ${service?.service?.toLowerCase() === "run errend"
+                ? "location"
+                : "market"
                 }...`}
               searchIcon={<Search className="h-4 w-4" />}
-              send={(type, text) => send(type, text)}
+              send={(type, text) => send(type, text, "pickup")}
             />
           )}
         </div>
@@ -309,7 +391,7 @@ export default function MarketSelectionScreen({ service, onSelectMarket, darkMod
                 key={market}
                 variant="outlined"
                 className="w-full justify-start py-3"
-                onClick={() => send(market, market)}
+                onClick={() => send("text", market, "pickup")}
               >
                 <MapPin className="h-4 w-4 mr-2" />
                 {market}

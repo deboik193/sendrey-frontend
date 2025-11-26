@@ -190,8 +190,10 @@ export const fetchNearbyUserRequests = createAsyncThunk(
       if (fleetType) params.append("fleetType", fleetType);
 
       const res = await api.get(`/nearby-users?${params.toString()}`);
+      // console.log("Nearby Users Response:", res.data);
       return res.data;
     } catch (error) {
+      console.error("Error fetching nearby users:", error);
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch nearby users"
       );

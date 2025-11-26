@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, CheckCheck, Smile, Download, FileText, Trash2, Edit2 } from "lucide-react";
 import { Button } from "@material-tailwind/react";
 
-export default function Message({ m, onReact, onDelete, onEdit, onMessageClick, canResendOtp, onConnectButtonClick }) {
+export default function Message({ m, onReact, onDelete, onEdit, onMessageClick, canResendOtp, onConnectButtonClick, onChooseDeliveryClick }) {
   const isMe = m.from === "me";
   const isSystem = m.from === "system";
   const [showContextMenu, setShowContextMenu] = useState(false);
@@ -208,6 +208,30 @@ export default function Message({ m, onReact, onDelete, onEdit, onMessageClick, 
               }}
             >
               Connect To Runner
+            </Button>
+          </div>
+          {afterText}
+        </div>
+      );
+    }
+
+    if (m.hasChooseDeliveryButton) {
+     // use second "connect to runner" text
+      const lastIndex = m.text.lastIndexOf('Choose Delivery Location');
+      const beforeText = m.text.substring(0, lastIndex);
+      const afterText = m.text.substring(lastIndex + 'Choose Delivery Location'.length);
+      return (
+        <div>
+          {beforeText}
+          <div className="mt-3">
+            <Button
+              className="w-full bg-primary text-white"
+              onClick={(e) => {
+                e.stopPropagation();
+                onChooseDeliveryClick && onChooseDeliveryClick();
+              }}
+            >
+              Choose Delivery Location
             </Button>
           </div>
           {afterText}

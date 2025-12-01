@@ -174,10 +174,15 @@ export default function MarketSelectionScreen({
 
     const locationText = selectedPlace.name || selectedPlace.address;
 
-    // DELIVERY location
-    send("map", locationText, "delivery");
-
-    setDeliveryLocation(locationText);
+    if (pendingDeliverySelection) {
+      // DELIVERY location
+      send("map", locationText, "delivery");
+      setDeliveryLocation(locationText);
+    } else {
+      // PICKUP location
+      send("map", locationText, "pickup");
+      setPickupLocation(locationText);
+    }
 
     setShowMap(false);
     setSelectedPlace(null);
@@ -243,7 +248,7 @@ export default function MarketSelectionScreen({
               },
             ];
           });
-        }, 2100); 
+        }, 2100);
       }
 
       return updated;
@@ -403,6 +408,7 @@ export default function MarketSelectionScreen({
               variant="text"
               className="w-full flex items-center py-3"
               onClick={() => {
+                setPendingDeliverySelection(false);
                 setShowMap(true);
                 setFindOnMap(false);
               }}

@@ -135,12 +135,12 @@ export const Welcome = () => {
             </div>
 
             {showConnecting && (
-                <div className="fixed inset-0 flex flex-col justify-end items-center bg-black bg-opacity-80 z-50 pb-10">
-                    <div className="flex items-center justify-center gap-3">
-                        <div className="flex  items-center justify-center mb-4">
+                <div className="fixed inset-0 flex flex-col justify-end items-center bg-black bg-opacity-80 z-50 pb-6 px-4 sm:pb-10">
+                    <div className="flex flex-col lg:flex-row items-center justify-center gap-3 w-full max-w-md">
+                        <div className="flex items-center justify-center mb-2 sm:mb-0">
                             <BarLoader />
                         </div>
-                        <p className="text-lg font-medium dark:text-gray-200 text-center">
+                        <p className="text-base sm:text-lg font-medium dark:text-gray-200 text-center break-words">
                             Please wait while we connect you to a runner…
                         </p>
                     </div>

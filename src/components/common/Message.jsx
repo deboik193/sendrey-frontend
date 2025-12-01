@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, CheckCheck, Smile, Download, FileText, Trash2, Edit2 } from "lucide-react";
 import { Button } from "@material-tailwind/react";
 
-export default function Message({ m, onReact, onDelete, onEdit, onMessageClick, canResendOtp, onConnectButtonClick, onChooseDeliveryClick }) {
+export default function Message({ m, onReact, onDelete, onEdit, onMessageClick, canResendOtp, onConnectButtonClick, onChooseDeliveryClick, showCursor = true }) {
   const isMe = m.from === "me";
   const isSystem = m.from === "system";
   const [showContextMenu, setShowContextMenu] = useState(false);
@@ -186,7 +186,7 @@ export default function Message({ m, onReact, onDelete, onEdit, onMessageClick, 
           >
             Resend
           </span>
-          {parts[1]}
+          {parts[1] || ''}
         </div>
       );
     }
@@ -258,7 +258,7 @@ export default function Message({ m, onReact, onDelete, onEdit, onMessageClick, 
         <div
           onClick={!isSystem ? handleLeftClick : undefined}
           onContextMenu={!isSystem ? handleContextMenu : undefined}
-          className={`shadow-sm backdrop-blur-sm rounded-2xl px-4 py-3 text-sm font-normal relative cursor-pointer
+          className={`shadow-sm backdrop-blur-sm rounded-2xl px-4 py-3 text-sm font-normal relative ${showCursor ? 'cursor-pointer' : ''}
           ${isMe
               ? "bg-primary border-primary text-white"
               : isSystem

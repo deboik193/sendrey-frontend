@@ -38,6 +38,7 @@ import { useCredentialFlow } from "../hooks/useCredentialFlow";
 import RunnerNotifications from "../components/common/RunnerNotifications";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchNearbyUserRequests } from "../Redux/userSlice";
+import Message from "../components/common/Message";
 
 // --- Mock  Data ---
 const contacts = [
@@ -76,37 +77,6 @@ const HeaderIcon = ({ children, tooltip }) => (
     </IconButton>
   </Tooltip>
 );
-
-const Message = ({ m }) => {
-  const isMe = m.from === "me";
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ type: "spring", stiffness: 260, damping: 20 }}
-      className={`w-full flex ${isMe ? "justify-end" : "justify-start"} mb-2`}
-    >
-      <div className="max-w-[80%] md:max-w-[55%]">
-        <div
-          className={`shadow-sm backdrop-blur-sm rounded-2xl px-4 py-3 text-sm font-normal 
-        ${isMe
-              ? "bg-primary border-primary text-white"
-              : "bg-gray-1001 dark:bg-black-100 dark:border-black-100 border-gray-1001 dark:text-gray-1002 text-black-200"}`}
-        >
-          <div>{m.text}</div>
-          <div className={`mt-1 flex items-center gap-1 text-[10px] ${isMe ? "text-gray-1001" : "text-primary"}`}>
-            {isMe && (
-              <span className="flex items-center">
-                {m.status === "read" ? <CheckCheck className="w-3 h-3" /> : m.status === "delivered" ? <Check className="w-3 h-3" /> : null}
-              </span>
-            )}
-          </div>
-        </div>
-        <span className="text-gray-800 text-xs font-medium">{m.time}</span>
-      </div>
-    </motion.div>
-  );
-};
 
 export default function WhatsAppLikeChat() {
   const [dark, setDark] = useDarkMode();
@@ -156,10 +126,13 @@ export default function WhatsAppLikeChat() {
 
   useEffect(() => {
     if (needsOtpVerification) {
+      // Start disabled
+      setCanResendOtp(false);
+
       // Enable resend after 30 seconds
       const timer = setTimeout(() => {
         setCanResendOtp(true);
-      }, 30000);
+      }, 15000);
 
       return () => clearTimeout(timer);
     }
@@ -178,12 +151,6 @@ export default function WhatsAppLikeChat() {
   const handleResendOtp = () => {
     if (!canResendOtp) return;
 
-    // Remove old OTP prompt
-    setMessages(prev =>
-      prev.filter(msg => !msg.hasResendLink && msg.text !== "We have sent you an OTP to confirm your phone number")
-    );
-
-    // Re-show OTP prompt
     const msg1 = {
       id: Date.now(),
       from: "them",
@@ -192,23 +159,27 @@ export default function WhatsAppLikeChat() {
       status: "delivered"
     };
 
-    const msg2 = {
-      id: Date.now() + 1,
-      from: "them",
-      text: `Enter the OTP we sent to ${runnerData.phone}, \n \nDidn't receive OTP? Resend`,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      status: "delivered",
-      hasResendLink: true     
-    };
+    setMessages(prev => [...prev, msg1]);
 
-    setMessages(prev => [...prev, msg1, msg2]);
+    setTimeout(() => {
+      const msg2 = {
+        id: Date.now() + 1,
+        from: "them",
+        text: `Enter the OTP we sent to ${runnerData.phone}, \n \nDidn't receive OTP? Resend`,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        status: "delivered",
+        hasResendLink: true
+      };
 
-    // Disable resend for 30 seconds
+      setMessages(prev => [...prev, msg2]);
+    }, 1200);
+
+    // Disable resend for 40 seconds
     setCanResendOtp(false);
 
     setTimeout(() => {
       setCanResendOtp(true);
-    }, 30000);
+    }, 40000);
   };
 
 
@@ -311,7 +282,7 @@ export default function WhatsAppLikeChat() {
       // Initial search
       searchNearbyRequests();
 
-      // Poll every 10 seconds
+      // Poll every 50 seconds
       searchIntervalRef.current = setInterval(() => {
         searchNearbyRequests();
       }, 50000);
@@ -516,6 +487,7 @@ export default function WhatsAppLikeChat() {
                   <Message key={m.id} m={m}
                     canResendOtp={canResendOtp}
                     onMessageClick={() => handleMessageClick(m)}
+                    showCursor={false}
                   />
                 ))}
               </div>
@@ -534,6 +506,7 @@ export default function WhatsAppLikeChat() {
                   showMic={false}
                   send={send}
                   showIcons={false}
+                  showEmojis={false}
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   disabled={credentialStep === null}

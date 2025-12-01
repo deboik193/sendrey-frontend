@@ -88,14 +88,6 @@ export default function RunnerSelectionScreen({
 
           <div className="flex-1 overflow-y-auto p-4">
 
-            {/* Loading State */}
-            {loading && (
-              <div className="text-center py-8">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-blue-600 mb-2"></div>
-                <p className="text-gray-500">Finding nearby runners...</p>
-              </div>
-            )}
-
             {/* Runners List */}
             {!loading && !locationError && nearbyRunners.length > 0 && (
               <div className="max-w-md mx-auto">

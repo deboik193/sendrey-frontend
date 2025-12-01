@@ -1,7 +1,7 @@
 export default function BarLoader() {
   return (
     <div className="flex items-center justify-center">
-      <div className="relative w-12 h-12">
+      <div className="relative w-10 h-10">
         {Array.from({ length: 12 }).map((_, i) => (
           <span
             key={i}

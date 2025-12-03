@@ -39,6 +39,7 @@ import RunnerNotifications from "../components/common/RunnerNotifications";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchNearbyUserRequests } from "../Redux/userSlice";
 import Message from "../components/common/Message";
+import { useSocket } from "../hooks/useSocket";
 
 // --- Mock  Data ---
 const contacts = [
@@ -87,13 +88,12 @@ export default function WhatsAppLikeChat() {
   const [text, setText] = useState("");
   const listRef = useRef(null);
   const [activeModal, setActiveModal] = useState(null);
-  const [runnerService, setRunnerService] = useState(null);
   const serviceTypeRef = useRef(null);
-  const SOCKET_URL = "";
-  // const SOCKET_URL = "http://localhost:4001";
-  const socketRef = useRef();
+
+  const SOCKET_URL = "http://localhost:4001";
+  const { socket, joinRunnerRoom, joinChat, sendMessage } = useSocket(SOCKET_URL);
+
   const [showUserSheet, setShowUserSheet] = useState(false);
-  // const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [runnerId, setRunnerId] = useState(null);
   const [runnerLocation, setRunnerLocation] = useState(null);
 
@@ -119,10 +119,16 @@ export default function WhatsAppLikeChat() {
     registrationComplete,
     setRegistrationComplete,
     handleOtpVerification,
+    onRegistrationSuccess,
     runnerData
-  } = useCredentialFlow(serviceTypeRef, (userData) => {
-    setRunnerId(userData._id || userData.id);
+  } = useCredentialFlow(serviceTypeRef, (runnerData) => {
+    setRunnerId(runnerData._id || runnerData.id);
   });
+
+  useEffect(() => {
+    console.log('Runner data from hook:', runnerData);
+    console.log('Runner ID:', runnerId);
+  }, [runnerData, runnerId]);
 
   useEffect(() => {
     if (needsOtpVerification) {
@@ -192,7 +198,7 @@ export default function WhatsAppLikeChat() {
   const pickUp = () => {
     serviceTypeRef.current = "pick-up";
     const newMsg = {
-      id: Date.now(),
+      id: Date.now().toString(),
       from: "me",
       text: 'Pick Up',
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -210,7 +216,7 @@ export default function WhatsAppLikeChat() {
   const runErrand = () => {
     serviceTypeRef.current = "run-errand";
     const newMsg = {
-      id: Date.now(),
+      id: Date.now().toString(),
       from: "me",
       text: 'Run Errand',
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -295,37 +301,24 @@ export default function WhatsAppLikeChat() {
     }
   }, [registrationComplete, runnerLocation, isChatActive, dispatch, runnerData?.fleetType]);
 
-
-  // websocket logic
   useEffect(() => {
-    socketRef.current = io(SOCKET_URL);
+    if (isChatActive && selectedUser && socket) {
+      const chatId = `user-${selectedUser._id}-runner-${runnerId}`;
+      // console.log('Joining chat room:', chatId);
 
-    socketRef.current.on("connect", () => {
-      // console.log("✅ Socket connected:", socketRef.current.id);
-    });
-
-    if (isChatActive && selectedUser) {
-      socketRef.current = io(SOCKET_URL);
-
-      // Join room with selected user
-      socketRef.current.emit("joinChat", selectedUser.id);
-
-      // Load chat history from server
-      socketRef.current.on("chatHistory", (msgs) => {
-        setMessages(msgs);
-      });
-
-      // Listen for incoming messages
-      socketRef.current.on("message", (msg) => {
-        setMessages((prev) => [...prev, msg]);
-      });
-
-      return () => {
-        socketRef.current.disconnect();
-      };
+      joinChat(
+        chatId,
+        (msgs) => setMessages(msgs),
+        (msg) => setMessages((prev) => [...prev, msg]) // onMessage
+      );
     }
-  }, [isChatActive, selectedUser]);
+  }, [isChatActive, selectedUser, socket, runnerId, joinChat]);
 
+  useEffect(() => {
+    if (registrationComplete && runnerId && serviceTypeRef.current && socket) {
+      joinRunnerRoom(runnerId, serviceTypeRef.current);
+    }
+  }, [registrationComplete, runnerId, socket, joinRunnerRoom]);
 
   const send = () => {
     if (!text.trim()) return;
@@ -348,7 +341,7 @@ export default function WhatsAppLikeChat() {
       handleCredentialAnswer(text.trim(), setText, setMessages);
     } else if (isChatActive) {
       const newMsg = {
-        id: Date.now(),
+        id: Date.now().toString(),
         from: "me",
         text: text.trim(),
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -356,11 +349,8 @@ export default function WhatsAppLikeChat() {
       };
 
       // Send via socket
-      if (socketRef.current) {
-        socketRef.current.emit("sendMessage", {
-          to: selectedUser.id,
-          message: newMsg
-        });
+      if (socket) {
+        sendMessage(`user-${selectedUser._id}-runner-${runnerId}`, newMsg);
       }
 
       setMessages((p) => [...p, newMsg]);
@@ -369,7 +359,7 @@ export default function WhatsAppLikeChat() {
   }
 
   const handlePickService = (user) => {
-    console.log("Runner picked service:", user);
+    console.log("user service found:", user);
 
     if (searchIntervalRef.current) {
       clearInterval(searchIntervalRef.current);
@@ -392,11 +382,8 @@ export default function WhatsAppLikeChat() {
       setMessages([greetingMsg]);
 
       // Also send via socket
-      if (socketRef.current) {
-        socketRef.current.emit("sendMessage", {
-          chatId: `${runnerId}-${user._id}`,
-          message: greetingMsg
-        });
+      if (socket) {
+        sendMessage(`user-${user._id}-runner-${runnerId}`, greetingMsg);
       }
     }, 500);
   };
@@ -519,6 +506,18 @@ export default function WhatsAppLikeChat() {
                   }
                 />
               </div>
+              ) : registrationComplete && !isChatActive ? (
+                <div className="p-4 py-7">
+                  <CustomInput
+                    showMic={false}
+                    setLocationIcon={true}
+                    showIcons={false}
+                    send={send}
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder="Type a message..."
+                  />
+                </div>
               ) : isChatActive ? (
                 <div className="p-4 py-7">
                   <CustomInput

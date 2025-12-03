@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 import useDarkMode from "../hooks/useDarkMode";
 import { useNavigate, useLocation, } from "react-router-dom";
 import MarketSelectionScreen from "../components/screens/MarketSelectionScreen";
@@ -9,6 +10,7 @@ import ChatScreen from "../components/screens/ChatScreen";
 import RunnerDashboardScreen from "../components/screens/RunnerDashboardScreen";
 import { useDispatch } from "react-redux";
 import BarLoader from "../components/common/BarLoader";
+
 
 export const Welcome = () => {
     const [dark, setDark] = useDarkMode();
@@ -25,6 +27,11 @@ export const Welcome = () => {
     const [selectedFleetType, setSelectedFleetType] = useState("");
     const [showConnecting, setShowConnecting] = useState(false);
 
+    const currentUser = useSelector((state) => state.auth?.user);
+
+    useEffect(() => {
+        console.log('Current user from Redux:', currentUser);
+    }, [currentUser]);
 
     const updateUserData = (newData) => {
         setUserData({ ...userData, ...newData });
@@ -39,6 +46,7 @@ export const Welcome = () => {
     };
 
     const serviceType = location.state?.serviceType || "";
+
 
     const renderScreen = () => {
         switch (currentScreen) {
@@ -95,10 +103,9 @@ export const Welcome = () => {
                     <ChatScreen
                         runner={selectedRunner}
                         market={selectedMarket}
-                        userData={userData}
+                        userData={currentUser ||{ _id: 'temp-user' }}
                         darkMode={dark}
                         toggleDarkMode={() => setDark(!dark)}
-                    // onBack={() => navigateTo("runner_selection")}
                     />
                 );
 

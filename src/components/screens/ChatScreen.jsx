@@ -21,16 +21,11 @@ import Header from "../common/Header";
 import Message from "../common/Message";
 import StatusQuickReplies from "../common/StatusQuickReplies";
 import CustomInput from "../common/CustomInput";
+import { useSocket } from "../../hooks/useSocket";
+// import 
 
 const initialMessages = [
   { id: 1, from: "them", text: "Hi there, How are you?", time: "12:24 PM", status: "read" },
-  {
-    id: 2,
-    from: "them",
-    text: "Waiting for your reply. As I have to go back soon. I have to travel long distance.",
-    time: "12:25 PM",
-    status: "delivered",
-  },
 ];
 
 const HeaderIcon = ({ children, tooltip, onClick }) => (
@@ -41,7 +36,7 @@ const HeaderIcon = ({ children, tooltip, onClick }) => (
   </Tooltip>
 );
 
-export default function ChatScreen({ runner, market, userData, darkMode, toggleDarkMode, onBack }) {
+export default function ChatScreen({ runner, market, userData, darkMode, toggleDarkMode, onBack, }) {
   const [messages, setMessages] = useState(initialMessages);
   const [text, setText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
@@ -54,6 +49,49 @@ export default function ChatScreen({ runner, market, userData, darkMode, toggleD
   const audioChunksRef = useRef([]);
   const recordingIntervalRef = useRef(null);
   const inputRef = useRef(null);
+
+
+
+  const SOCKET_URL = "http://localhost:4001";
+  const { socket, joinChat, sendMessage, isConnected } = useSocket(SOCKET_URL);
+
+  const chatId = userData?._id && runner?._id
+    ? `user-${userData._id}-runner-${runner._id}`
+    : null;
+
+  useEffect(() => {
+    console.log('ChatScreen mounted:', {
+      socket: !!socket,
+      chatId,
+      isConnected,
+      userData,
+      runner,
+      hasRunner: !!runner,
+      hasUserData: !!userData
+    });
+
+    if (socket && isConnected && chatId) {
+      console.log('Attempting to join chat:', chatId);
+      joinChat(
+        chatId,
+        (msgs) => {
+          // Load chat history
+          if (msgs && msgs.length > 0) {
+            setMessages(msgs);
+          }
+        },
+        (msg) => {
+          // Receive new messages
+          setMessages((prev) => [...prev, msg]);
+        }
+      );
+    } else {
+      console.log('Socket or chatId not available yet:', {
+        socket: !!socket,
+        chatId
+      });
+    }
+  }, [socket, chatId, isConnected, joinChat]);
 
   useEffect(() => {
     if (listRef.current) {
@@ -72,29 +110,22 @@ export default function ChatScreen({ runner, market, userData, darkMode, toggleD
 
   const send = () => {
     if (!text.trim()) return;
+
     const newMsg = {
-      id: Date.now(),
+      id: Date.now().toString(),
       from: "me",
       text: text.trim(),
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       status: "sent",
     };
+
     setMessages((p) => [...p, newMsg]);
     setText("");
 
-    // Simulate reply for demo purposes
-    setTimeout(() => {
-      setMessages((p) => [
-        ...p,
-        {
-          id: Date.now() + 1,
-          from: "them",
-          text: "Got it! I'll keep you updated on my progress.",
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          status: "delivered",
-        },
-      ]);
-    }, 1200);
+    // Send via socket
+    if (socket) {
+      sendMessage(chatId, newMsg);
+    }
   };
 
   const handleStatusSelect = (status) => {
@@ -106,20 +137,13 @@ export default function ChatScreen({ runner, market, userData, darkMode, toggleD
       status: "sent",
       type: "text"
     };
+
     setMessages((p) => [...p, newMsg]);
 
-    setTimeout(() => {
-      setMessages((p) => [
-        ...p,
-        {
-          id: Date.now() + 1,
-          from: "them",
-          text: "Got it! I'll keep you updated on my progress.",
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          status: "delivered",
-        },
-      ]);
-    }, 1200);
+    // Send via socket
+    if (socket) {
+      sendMessage(chatId, newMsg);
+    }
   };
 
   // File upload handling
@@ -235,10 +259,17 @@ export default function ChatScreen({ runner, market, userData, darkMode, toggleD
     );
   };
 
+  useEffect(() => {
+    console.log('Runner data received:', runner);
+    console.log('UserData received:', userData);
+  }, [runner, userData]);
+
   return (
     <div className="h-full flex flex-col">
       <Header
-        title={runner.name}
+        title={runner?.firstName && runner?.lastName
+          ? `${runner.firstName} ${runner.lastName}`
+          : runner?.firstName || runner?.lastName || "Runner"}
         showBack={true}
         onBack={onBack}
         darkMode={darkMode}

@@ -65,7 +65,7 @@ export const register = createAsyncThunk(
                 payload.lastName = lastName;
             }
 
-            
+
             console.log('CLIENT LOG: Registration Payload being sent:', payload);
             const response = await api.post(endpoint, payload);
             return response.data.data;
@@ -222,7 +222,7 @@ const authSlice = createSlice({
                 state.status = "succeeded";
                 state.isAuthenticated = true;
                 state.token = action.payload.token;
-                state.user = action.payload.user;
+                state.user = action.payload.data?.user || action.payload.user;
             })
             .addCase(register.rejected, (state, action) => {
                 state.status = "failed";
@@ -235,7 +235,7 @@ const authSlice = createSlice({
             })
             .addCase(login.fulfilled, (state, action) => {
                 state.status = "succeeded";
-                state.user = action.payload.user;
+                state.user = action.payload.data?.user || action.payload.user;
                 state.token = action.payload.token;
                 state.isAuthenticated = true;
             })
@@ -250,7 +250,7 @@ const authSlice = createSlice({
             })
             .addCase(verifyEmail.fulfilled, (state, action) => {
                 state.status = "succeeded";
-                state.user = action.payload.user;
+                state.user = action.payload.data?.user || action.payload.user;
             })
             .addCase(verifyEmail.rejected, (state, action) => {
                 state.status = "failed";
@@ -263,61 +263,9 @@ const authSlice = createSlice({
             })
             .addCase(resendEmailVerification.fulfilled, (state, action) => {
                 state.status = "succeeded";
-                state.user = action.payload.user;
+                state.user = action.payload.data?.user || action.payload.user;
             })
             .addCase(resendEmailVerification.rejected, (state, action) => {
-                state.status = "failed";
-                state.error = action.payload || action.error.message;
-            })
-
-            .addCase(forgotPassword.pending, (state) => {
-                state.status = "loading";
-                state.error = "";
-            })
-            .addCase(forgotPassword.fulfilled, (state, action) => {
-                state.status = "succeeded";
-                state.user = action.payload.user;
-            })
-            .addCase(forgotPassword.rejected, (state, action) => {
-                state.status = "failed";
-                state.error = action.payload || action.error.message;
-            })
-
-            .addCase(resetPassword.pending, (state) => {
-                state.status = "loading";
-                state.error = "";
-            })
-            .addCase(resetPassword.fulfilled, (state, action) => {
-                state.status = "succeeded";
-                state.user = action.payload.user;
-            })
-            .addCase(resetPassword.rejected, (state, action) => {
-                state.status = "failed";
-                state.error = action.payload || action.error.message;
-            })
-
-            .addCase(changePassword.pending, (state) => {
-                state.status = "loading";
-                state.error = "";
-            })
-            .addCase(changePassword.fulfilled, (state, action) => {
-                state.status = "succeeded";
-                state.user = action.payload.user;
-            })
-            .addCase(changePassword.rejected, (state, action) => {
-                state.status = "failed";
-                state.error = action.payload || action.error.message;
-            })
-
-            .addCase(phoneVerificationRequest.pending, (state) => {
-                state.status = "loading";
-                state.error = "";
-            })
-            .addCase(phoneVerificationRequest.fulfilled, (state, action) => {
-                state.status = "succeeded";
-                state.user = action.payload.user;
-            })
-            .addCase(phoneVerificationRequest.rejected, (state, action) => {
                 state.status = "failed";
                 state.error = action.payload || action.error.message;
             })
@@ -328,13 +276,35 @@ const authSlice = createSlice({
             })
             .addCase(verifyPhone.fulfilled, (state, action) => {
                 state.status = "succeeded";
-                state.user = action.payload.user;
+                state.user = action.payload.data?.user || action.payload.user;
+                
+                state.token = action.payload.token || action.payload.data?.token;
+                state.isAuthenticated = true;
             })
             .addCase(verifyPhone.rejected, (state, action) => {
                 state.status = "failed";
                 state.error = action.payload || action.error.message;
             })
+
+            // Update all other cases similarly
+            .addCase(forgotPassword.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.user = action.payload.data?.user || action.payload.user;
+            })
+            .addCase(resetPassword.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.user = action.payload.data?.user || action.payload.user;
+            })
+            .addCase(changePassword.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.user = action.payload.data?.user || action.payload.user;
+            })
+            .addCase(phoneVerificationRequest.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.user = action.payload.data?.user || action.payload.user;
+            });
     },
 });
 
 export default authSlice.reducer;
+export const { logout: logoutAction } = authSlice.actions;

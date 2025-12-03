@@ -74,6 +74,8 @@ export const Auth = () => {
                 };
 
                 const result = await dispatch(verifyPhone(verifyPayload)).unwrap();
+
+
                 setRegistrationSuccess(true);
                 setNeedsOtpVerification(false);
 
@@ -81,8 +83,10 @@ export const Auth = () => {
 
                 setTimeout(() => {
                     navigate("/welcome", {
-                        state: { serviceType: data.serviceType },
-                        replace: true 
+                        state: {
+                            serviceType: data.serviceType
+                        },
+                        replace: true
                     });
                 }, 2000);
             } catch (error) {

@@ -298,8 +298,11 @@ export const useCredentialFlow = (serviceTypeRef, onRegistrationSuccess) => {
       setIsCollectingCredentials(false);
       setCredentialStep(null);
 
-      if (onRegistrationSuccess) {
-        onRegistrationSuccess(result.user);
+      const registeredrunnerData = result.data?.user || result.user;
+      console.log('Runner registration successful, runner data:', registeredrunnerData);
+
+      if (onRegistrationSuccess && registeredrunnerData) {
+        onRegistrationSuccess(registeredrunnerData);
       }
 
     } catch (error) {

@@ -27,7 +27,7 @@ export default function RunnerSelectionScreen({
 
 
   const SOCKET_URL = "http://localhost:4001";
-  const { socket, isConnected, onRunnerAccepted } = useSocket(SOCKET_URL);
+  const { socket, isConnected } = useSocket(SOCKET_URL);
 
   // Get user's current location
   useEffect(() => {
@@ -68,14 +68,21 @@ export default function RunnerSelectionScreen({
   useEffect(() => {
     if (!socket || !isWaitingForRunner || !selectedRunnerId) return;
 
+    console.log(`Attaching 'runnerAccepted' listener for runner ${selectedRunnerId}`);
+
     const handleRunnerAccepted = (data) => {
-      console.log('Runner accepted:', data);
+      console.log('Runner accepted received from server:', data);
+
+      // Check if the acceptance is for the runner we are currently waiting for
       if (data.runnerId === selectedRunnerId) {
-        // Runner accepted! Navigate to chat
+        console.log('Runner accepted! Navigating to chat...');
+
         const runner = nearbyRunners.find(r => (r._id || r.id) === data.runnerId);
+
         if (runner) {
           setIsWaitingForRunner(false);
           setRequestSent(false);
+
           if (onSelectRunner) {
             onSelectRunner(runner);
           }
@@ -83,14 +90,16 @@ export default function RunnerSelectionScreen({
         }
       }
     };
-    onRunnerAccepted(handleRunnerAccepted);
 
+    socket.on('runnerAccepted', handleRunnerAccepted);
+    
     return () => {
       if (socket && socket.off) {
         socket.off('runnerAccepted', handleRunnerAccepted);
+        console.log(`Detached 'runnerAccepted' listener for runner ${selectedRunnerId}`);
       }
     };
-  }, [socket, isWaitingForRunner, selectedRunnerId, nearbyRunners, onSelectRunner, onRunnerAccepted]);
+  }, [socket, isWaitingForRunner, selectedRunnerId, nearbyRunners, onSelectRunner]);
 
   const handleClose = () => {
     setIsVisible(false);

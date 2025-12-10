@@ -9,11 +9,11 @@ export default function RunnerNotifications({
   requests,
   runnerId,
   darkMode,
-  onPickService
+  onPickService,
+  socket,
+  isConnected,
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const SOCKET_URL = "http://localhost:4001";
-  const { socket, isConnected } = useSocket(SOCKET_URL);
 
   useEffect(() => {
     // Open notifications when there are requests

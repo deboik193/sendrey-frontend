@@ -5,6 +5,7 @@ import { Search, MapPin, X } from "lucide-react";
 import Message from "../common/Message";
 import Onboarding from "../common/Onboarding";
 import CustomInput from "../common/CustomInput";
+import Map from "../common/Map";
 
 const markets = [];
 
@@ -13,6 +14,14 @@ export default function MarketSelectionScreen({
   onSelectMarket,
   darkMode,
   toggleDarkMode,
+  messages,
+  setMessages,
+  pickupLocation,
+  setPickupLocation,
+  deliveryLocation,
+  setDeliveryLocation,
+  onOpenSavedLocations,
+  onSelectService,
   onChooseDeliveryClick,
 }) {
   const initialMessages = [
@@ -35,7 +44,7 @@ export default function MarketSelectionScreen({
       id: 4,
       from: "them",
       text:
-        service?.service?.toLowerCase() === "run errand"
+        service?.service?.toLowerCase() === "run-errand"
           ? "Which market would you like us to go to?"
           : "Which location do you want to pickup?",
       time: "12:25 PM",
@@ -43,21 +52,21 @@ export default function MarketSelectionScreen({
     },
   ];
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [messages, setMessages] = useState(initialMessages);
+  useEffect(() => {
+    if (messages && messages.length === 0) {
+      setMessages(initialMessages);
+    }
+  }, [messages, setMessages, initialMessages]);
 
+  const [searchTerm, setSearchTerm] = useState("");
   const [showMap, setShowMap] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState(null);
-  const [findOnMap, setFindOnMap] = useState(true);
-  const mapRef = useRef(null);
-  const mapInstanceRef = useRef(null);
-  const markerRef = useRef(null);
+  const [showLocationButtons, setShowLocationButtons] = useState(true);
+
   const listRef = useRef(null);
   const timeoutRef = useRef(null);
   const [showCustomInput, setShowCustomInput] = useState(true);
   const [pendingDeliverySelection, setPendingDeliverySelection] = useState(false);
-  const [pickupLocation, setPickupLocation] = useState(null);
-  const [deliveryLocation, setDeliveryLocation] = useState(null);
 
   useEffect(() => {
     if (listRef.current) {
@@ -65,136 +74,41 @@ export default function MarketSelectionScreen({
     }
   }, [messages]);
 
-
-  useEffect(() => {
-    const initializeMap = () => {
-      if (!mapRef.current) return;
-
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const userLocation = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            };
-            createMap(userLocation, 14);
-          },
-          () => {
-            createMap({ lat: 6.5244, lng: 3.3792 }, 12);
-          },
-          { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
-        );
-      } else {
-        createMap({ lat: 6.5244, lng: 3.3792 }, 12);
-      }
-    };
-
-    if (showMap && window.google) {
-      initializeMap();
-    }
-  }, [showMap]);
-
-  const createMap = (center, zoom) => {
-    const map = new window.google.maps.Map(mapRef.current, {
-      center: center,
-      zoom: zoom,
-    });
-
-    mapInstanceRef.current = map;
-
-    map.addListener("click", (e) => {
-      const clickedLocation = {
-        lat: e.latLng.lat(),
-        lng: e.latLng.lng(),
-      };
-
-      const geocoder = new window.google.maps.Geocoder();
-      geocoder.geocode({ location: clickedLocation }, (results, status) => {
-        if (status === "OK" && results[0]) {
-          const place = {
-            lat: clickedLocation.lat,
-            lng: clickedLocation.lng,
-            address: results[0].formatted_address,
-            name: results[0].formatted_address,
-          };
-          setSelectedPlace(place);
-        } else {
-          const place = {
-            lat: clickedLocation.lat,
-            lng: clickedLocation.lng,
-            address: `Location (${clickedLocation.lat}, ${clickedLocation.lng})`,
-            name: `Location (${clickedLocation.lat}, ${clickedLocation.lng})`,
-          };
-          setSelectedPlace(place);
-        }
-
-        if (markerRef.current) markerRef.current.setMap(null);
-        markerRef.current = new window.google.maps.Marker({
-          position: clickedLocation,
-          map: map,
-          title: "Selected Location",
-        });
-      });
-    });
-
-    const input = document.getElementById("map-search");
-    const searchBox = new window.google.maps.places.SearchBox(input);
-
-    map.addListener("bounds_changed", () => {
-      searchBox.setBounds(map.getBounds());
-    });
-
-    searchBox.addListener("places_changed", () => {
-      const places = searchBox.getPlaces();
-      if (places.length === 0) return;
-      const place = places[0];
-      const selectedPlace = {
-        name: place.name,
-        address: place.formatted_address,
-        lat: place.geometry.location.lat(),
-        lng: place.geometry.location.lng(),
-      };
-      setSelectedPlace(selectedPlace);
-
-      map.setCenter(place.geometry.location);
-      map.setZoom(16);
-
-      if (markerRef.current) markerRef.current.setMap(null);
-      markerRef.current = new window.google.maps.Marker({
-        position: place.geometry.location,
-        map: map,
-        title: place.name,
-      });
-    });
+  const handleMapSelect = (place) => {
+    setSelectedPlace(place);
   };
-
 
   const handleMapSelection = () => {
     if (!selectedPlace) return;
 
     const locationText = selectedPlace.name || selectedPlace.address;
+    const source = pendingDeliverySelection ? "delivery" : "pickup";
 
     if (pendingDeliverySelection) {
-      // DELIVERY location
-      send("map", locationText, "delivery");
       setDeliveryLocation(locationText);
     } else {
-      // PICKUP location
-      send("map", locationText, "pickup");
       setPickupLocation(locationText);
     }
+
+    send("map", locationText, source);
 
     setShowMap(false);
     setSelectedPlace(null);
     setPendingDeliverySelection(false);
-
-    if (markerRef.current) markerRef.current.setMap(null);
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current = null;
-      if (mapRef.current) mapRef.current.innerHTML = "";
-    }
   };
 
+  const handleLocationSelectedFromSaved = (location, type) => {
+    const locationText = location.address || location.name;
+
+    if (type === 'delivery') {
+      setDeliveryLocation(locationText);
+    } else {
+      setPickupLocation(locationText);
+    }
+
+    // Send the message to chat
+    send("saved_location", locationText, type);
+  };
 
   const send = (type, text, source) => {
     if (!text || typeof text !== "string") return;
@@ -203,12 +117,14 @@ export default function MarketSelectionScreen({
 
     const msgText = text.trim();
 
-    //pickup (Message 4 response)
+    setShowLocationButtons(false);
+
+    // Store pickup location
     if (!pickupLocation && !pendingDeliverySelection && source !== "delivery") {
       setPickupLocation(msgText);
     }
 
-    // store delivery location
+    // Store delivery location
     if (source === "delivery") {
       setDeliveryLocation(msgText);
     }
@@ -227,10 +143,10 @@ export default function MarketSelectionScreen({
       const lastBot = prev[prev.length - 1];
       const alreadyHasFive = prev.some((m) => m.id === 5);
 
-      if (lastBot?.id === 4 && !alreadyHasFive) {
+      // Show "Choose Delivery Location" message after pickup is set
+      if (lastBot?.id === 4 && !alreadyHasFive && source === "pickup") {
         setTimeout(() => {
           setMessages((p) => {
-            // double-guard to avoid duplicates
             if (p.some((m) => m.id === 5)) return p;
 
             return [
@@ -254,12 +170,14 @@ export default function MarketSelectionScreen({
       return updated;
     });
 
-
-
     setShowCustomInput(false);
-    setFindOnMap(false);
 
-    // fake bot “processing”
+    // Show location buttons after pickup selection
+    if (source === "pickup" && !pendingDeliverySelection) {
+      setTimeout(() => setShowLocationButtons(true), 2500);
+    }
+
+    // Fake bot "processing"
     const botResponse = {
       id: Date.now() + 1,
       from: "them",
@@ -273,7 +191,7 @@ export default function MarketSelectionScreen({
       setTimeout(() => {
         setMessages((prev) => prev.filter((msg) => msg.text !== "In progress..."));
 
-        // navigate after delivery is selected
+        // Navigate after delivery is selected
         if (source === "delivery") {
           onSelectMarket({
             pickup: pickupLocation,
@@ -284,27 +202,31 @@ export default function MarketSelectionScreen({
     }, 1200);
   };
 
-
   const handleChooseDeliveryClick = () => {
     setPendingDeliverySelection(true);
     setShowMap(true);
+    setShowLocationButtons(true); // Show only "View saved locations" button
   };
-
 
   const filteredMarkets = markets.filter((market) =>
     market.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Check if we're in delivery selection mode
+  const isDeliveryMode = messages.some(m => m.hasChooseDeliveryButton) && !deliveryLocation;
+  const isProcessing = messages.some(m => m.text === "In progress...");
+
   if (showMap) {
     return (
       <Onboarding darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
-        <div className="w-full h-full flex flex-col">
+        <div className="w-full h-screen flex flex-col">
           <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b">
             <Button
               variant="text"
               onClick={() => {
                 setShowMap(false);
-                setFindOnMap(true);
+                setShowLocationButtons(true);
+                setSelectedPlace(null);
               }}
               className="flex items-center"
             >
@@ -320,19 +242,7 @@ export default function MarketSelectionScreen({
             </Button>
           </div>
 
-          <div className="p-4 bg-white dark:bg-gray-800 border-b">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                id="map-search"
-                type="text"
-                placeholder="Search for a location..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-black dark:text-white"
-              />
-            </div>
-          </div>
-
-          <div ref={mapRef} className="flex-1 w-full" />
+          <Map onLocationSelect={handleMapSelect} />
 
           {selectedPlace && (
             <div className="p-4 bg-white dark:bg-gray-800 border-t">
@@ -380,7 +290,7 @@ export default function MarketSelectionScreen({
               showMic={false}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder={`Search for a ${service?.service?.toLowerCase() === "run errend"
+              placeholder={`Search for a ${service?.service?.toLowerCase() === "run-errand"
                 ? "location"
                 : "market"
                 }...`}
@@ -390,7 +300,7 @@ export default function MarketSelectionScreen({
           )}
         </div>
 
-        <div className="space-y-2 max-h-96 overflow-y-auto">
+        <div className={`space-y-1 -mt-3 max-h-96 overflow-y-auto ${isDeliveryMode ? '-mt-6 pb-5' : ''}`}>
           {searchTerm &&
             filteredMarkets.map((market) => (
               <Button
@@ -404,18 +314,36 @@ export default function MarketSelectionScreen({
               </Button>
             ))}
 
-          {findOnMap && (
+          {/* Only show "Find on map" for PICKUP selection */}
+          {showLocationButtons && !isDeliveryMode && !isProcessing && (
             <Button
               variant="text"
-              className="w-full flex items-center py-3"
+              className="w-full flex items-center py-2"
               onClick={() => {
                 setPendingDeliverySelection(false);
                 setShowMap(true);
-                setFindOnMap(false);
+                setShowLocationButtons(false);
               }}
             >
               <MapPin className="h-4 w-4 mr-2" />
               Find on map
+            </Button>
+          )}
+
+          {/* Always show "View saved locations" when location buttons are visible */}
+          {showLocationButtons && !isProcessing && (
+            <Button
+              variant="text"
+              className="w-full text-primary flex items-center py-2"
+              onClick={() => {
+                onOpenSavedLocations(
+                  true,
+                  handleLocationSelectedFromSaved, // Callback on selection
+                  () => setShowLocationButtons(true) // onDismiss callback
+                );
+              }}
+            >
+              View saved locations
             </Button>
           )}
         </div>

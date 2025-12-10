@@ -42,6 +42,7 @@ import Message from "../components/common/Message";
 import { useSocket } from "../hooks/useSocket";
 import { InitialRunnerMessage } from "../components/common/InitialRunnerMessage";
 import OrderStatusFlow from "../components/common/OrderStatusFlow";
+import AttachmentOptionsFlow from "../components/common/AttachmentOptionsFlow";
 
 // --- Mock  Data ---
 const contacts = [
@@ -91,10 +92,12 @@ export default function WhatsAppLikeChat() {
   const listRef = useRef(null);
   const [activeModal, setActiveModal] = useState(null);
   const serviceTypeRef = useRef(null);
+  // flows
   const [showOrderFlow, setShowOrderFlow] = useState(false);
+  const [isAttachFlowOpen, setIsAttachFlowOpen] = useState(false);
 
   const SOCKET_URL = "http://localhost:4001";
-  const { socket, joinRunnerRoom, joinChat, sendMessage } = useSocket(SOCKET_URL);
+  const { socket, joinRunnerRoom, joinChat, sendMessage, isConnected } = useSocket(SOCKET_URL);
 
   const [showUserSheet, setShowUserSheet] = useState(false);
   const [runnerId, setRunnerId] = useState(null);
@@ -102,6 +105,7 @@ export default function WhatsAppLikeChat() {
 
   const [isChatActive, setIsChatActive] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [initialMessageSent, setInitialMessageSent] = useState(false);
 
   const dispatch = useDispatch();
   const searchIntervalRef = useRef(null);
@@ -305,7 +309,7 @@ export default function WhatsAppLikeChat() {
   }, [registrationComplete, runnerLocation, isChatActive, dispatch, runnerData?.fleetType]);
 
   useEffect(() => {
-    if (isChatActive && selectedUser && socket) {
+    if (isChatActive && selectedUser && socket && !initialMessageSent) {
       const chatId = `user-${selectedUser._id}-runner-${runnerId}`;
 
       joinChat(
@@ -328,8 +332,21 @@ export default function WhatsAppLikeChat() {
           }
         }
       );
+
+      InitialRunnerMessage({
+        user: selectedUser,
+        runnerData,
+        serviceType: serviceTypeRef.current,
+        runnerId,
+        socket,
+        chatId,
+        sendMessage
+      });
+
+      setInitialMessageSent(true);
+      console.log(`Joined chat: ${chatId}`);
     }
-  }, [isChatActive, selectedUser, socket, runnerId, joinChat]);
+  }, [isChatActive, selectedUser, socket, runnerId, joinChat, initialMessageSent, sendMessage, runnerData]);
 
   useEffect(() => {
     if (registrationComplete && runnerId && serviceTypeRef.current && socket) {
@@ -387,23 +404,16 @@ export default function WhatsAppLikeChat() {
     setSelectedUser(user);
     setIsChatActive(true);
     setMessages([]);
-
-    const chatId = `user-${user._id}-runner-${runnerId}`;
-
-    await InitialRunnerMessage({
-      user,
-      runnerData,
-      serviceType: serviceTypeRef.current,
-      runnerId,
-      socket,
-      chatId,
-      sendMessage
-    });
+    setInitialMessageSent(false)
   };
 
   const handleLocationClick = () => {
     setShowOrderFlow(true);
   };
+
+  const handleAttachClick = () => {
+    setIsAttachFlowOpen(true);
+  }
 
   return (
     <div className={` bg-white dark:bg-black-100`}>
@@ -539,13 +549,14 @@ export default function WhatsAppLikeChat() {
                 <div className="p-4 py-7">
                   <CustomInput
                     showMic={false}
-                    setLocationIcon={true} // onClick locationIcon
+                    setLocationIcon={true}
                     showIcons={true}
                     send={send}
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     placeholder={`Message ${selectedUser?.firstName || 'user'}...`}
                     onLocationClick={handleLocationClick}
+                    onAttachClick={handleAttachClick}
                   />
                 </div>
               ) : null}
@@ -558,6 +569,8 @@ export default function WhatsAppLikeChat() {
                   runnerId={runnerId}
                   darkMode={dark}
                   onPickService={handlePickService}
+                  socket={socket}
+                  isConnected={isConnected}
                 />
               )}
 
@@ -570,6 +583,24 @@ export default function WhatsAppLikeChat() {
                     pickupLocation: selectedUser?.pickupLocation || "Pickup Location"
                   }}
                   darkMode={dark}
+                />
+              )}
+
+              {isAttachFlowOpen && (
+                <AttachmentOptionsFlow
+                  isOpen={isAttachFlowOpen}
+                  onClose={() => setIsAttachFlowOpen(false)}
+                  darkMode={dark}
+                  onSelectCamera={() => {
+                    console.log('Open camera functionality');
+                    setIsAttachFlowOpen(false);
+                    // TODO: Implement camera logic
+                  }}
+                  onSelectGallery={() => {
+                    console.log('Open gallery/file picker functionality');
+                    setIsAttachFlowOpen(false); 
+                    // TODO: Implement file picker logic
+                  }}
                 />
               )}
 

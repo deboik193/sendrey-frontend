@@ -14,7 +14,13 @@ const initialMessages = [
   }
 ];
 
-export default function ServiceSelectionScreen({ onSelectService, darkMode, toggleDarkMode }) {
+export default function ServiceSelectionScreen({
+  onSelectService,
+  darkMode,
+  toggleDarkMode,
+  onNavigateToPickup,
+  onNavigateToErrand,
+}) {
 
   const [messages, setMessages] = useState(initialMessages);
   const listRef = useRef(null);
@@ -64,6 +70,13 @@ export default function ServiceSelectionScreen({ onSelectService, darkMode, togg
 
       timeoutRef.current = setTimeout(() => {
         onSelectService(serviceType); // Pass the backend format
+
+        if (serviceType === 'pick-up') {
+          onNavigateToPickup();
+        } else if (serviceType === 'run-errand') {
+          onNavigateToErrand();
+        }
+
       }, 800);
     }, 1200);
   };
@@ -73,7 +86,7 @@ export default function ServiceSelectionScreen({ onSelectService, darkMode, togg
       <div className="w-full max-w-2xl mx-auto p-4 relative">
         {messages.map((m) => (
           <Message key={m.id} m={m}
-          showCursor={false}
+            showCursor={false}
           />
         ))}
 
@@ -84,6 +97,8 @@ export default function ServiceSelectionScreen({ onSelectService, darkMode, togg
           >
             <span>Pick Up</span>
           </Button>
+
+          {/* run errand logic is current logic,  */}
 
           <Button
             onClick={() => send('run-errand', 'Run Errand')}

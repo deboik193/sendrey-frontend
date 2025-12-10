@@ -10,7 +10,7 @@ const OrderStatusFlow = ({ isOpen, onClose, orderData, darkMode }) => {
         { id: 1, label: "On the way to location", key: "on_way_to_pickup" },
         { id: 2, label: "Arrived at location", key: "arrived_at_pickup" },
         { id: 3, label: "Send total Price", key: "send_price" },
-        { id: 4, label: "Send Invoice", key: "send_invoice" },
+        { id: 4, label: "Send Invoice", key: "send_invoice" }, // invoice.jsx, modal onclick add items
         { id: 5, label: "On the way to deliver", key: "on_way_to_delivery" },
         { id: 6, label: "Arrived to deliver", key: "arrived_at_delivery" },
         { id: 7, label: "Delivered", key: "delivered" },

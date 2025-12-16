@@ -22,6 +22,7 @@ export default function MarketSelectionScreen({
   setDeliveryLocation,
   onOpenSavedLocations,
 }) {
+  // Determine if this is pick-up or run-errand service
   const isPickupService = service?.service === "pick-up";
   const isErrandService = service?.service === "run-errand";
 
@@ -44,6 +45,7 @@ export default function MarketSelectionScreen({
       },
     ];
 
+    // Different flow for each service
     if (isPickupService) {
       return [
         ...baseMessages,
@@ -85,7 +87,6 @@ export default function MarketSelectionScreen({
   const [currentStep, setCurrentStep] = useState(isPickupService ? "pickup-location" : "market-location");
 
   const listRef = useRef(null);
-  const messagesEndRef = useRef(null);
   const timeoutRef = useRef(null);
   const [showCustomInput, setShowCustomInput] = useState(true);
   const [showPhoneInput, setShowPhoneInput] = useState(false);
@@ -113,6 +114,7 @@ export default function MarketSelectionScreen({
       setPickupLocation(locationText);
       send("map", locationText, "pickup-location");
     } else {
+      // For market location (errand service)
       setPickupLocation(locationText);
       send("map", locationText, "market-location");
     }
@@ -132,6 +134,7 @@ export default function MarketSelectionScreen({
       setPickupLocation(locationText);
       send("saved_location", locationText, "pickup-location");
     } else {
+      // For market location
       setPickupLocation(locationText);
       send("saved_location", locationText, "market-location");
     }
@@ -157,6 +160,7 @@ export default function MarketSelectionScreen({
     setShowCustomInput(false);
     setShowPhoneInput(false);
 
+    // Fake bot "processing"
     const botResponse = {
       id: Date.now() + 1,
       from: "them",
@@ -170,6 +174,7 @@ export default function MarketSelectionScreen({
       setTimeout(() => {
         setMessages((prev) => prev.filter((msg) => msg.text !== "In progress..."));
 
+        // Handle different flows based on service type
         if (isPickupService) {
           handlePickupFlow(source, msgText);
         } else if (isErrandService) {
@@ -181,12 +186,13 @@ export default function MarketSelectionScreen({
 
   const handlePickupFlow = (source, text) => {
     if (source === "pickup-location" && !pickupPhoneNumber) {
+      // After pickup location, ask for pickup phone number
       setMessages((p) => [
         ...p,
         {
           id: Date.now() + 2,
           from: "them",
-          text: "Please enter pick up phone number. Use My Phone Number",
+          text: "Please enter pick up phone number",
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           status: "delivered",
           hasUseMyNumberButton: true,
@@ -196,6 +202,7 @@ export default function MarketSelectionScreen({
       setCurrentStep("pickup-phone");
       setShowPhoneInput(true);
     } else if (source === "pickup-phone" && !deliveryLocation) {
+      // After pickup phone, ask for delivery location
       setPickupPhoneNumber(text);
       setMessages((p) => [
         ...p,
@@ -209,14 +216,15 @@ export default function MarketSelectionScreen({
         },
       ]);
       setCurrentStep("delivery-location");
-      setTimeout(() => setShowLocationButtons(true), 2500);
+      setTimeout(() => setShowLocationButtons(true), 200);
     } else if (source === "delivery" && !dropoffPhoneNumber) {
+      // After delivery location, ask for dropoff phone number
       setMessages((p) => [
         ...p,
         {
           id: Date.now() + 2,
           from: "them",
-          text: "Kindly enter drop off phone number. Use My Phone Number",
+          text: "Kindly enter drop off phone number",
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           status: "delivered",
           hasUseMyNumberButton: true,
@@ -226,6 +234,7 @@ export default function MarketSelectionScreen({
       setCurrentStep("dropoff-phone");
       setShowPhoneInput(true);
     } else if (source === "dropoff-phone") {
+      // Complete - navigate to next screen
       setDropoffPhoneNumber(text);
       onSelectMarket({
         serviceType: "pick-up",
@@ -239,6 +248,7 @@ export default function MarketSelectionScreen({
 
   const handleErrandFlow = (source, text) => {
     if (source === "market-location" && !deliveryLocation) {
+      // After market selection, ask for delivery location
       setMessages((p) => [
         ...p,
         {
@@ -251,8 +261,9 @@ export default function MarketSelectionScreen({
         },
       ]);
       setCurrentStep("delivery-location");
-      setTimeout(() => setShowLocationButtons(true), 2500);
+      setTimeout(() => setShowLocationButtons(true), 200);
     } else if (source === "delivery") {
+      // Complete - navigate to next screen
       onSelectMarket({
         serviceType: "run-errand",
         marketLocation: pickupLocation,
@@ -262,7 +273,7 @@ export default function MarketSelectionScreen({
   };
 
   const handleUseMyNumber = (phoneType) => {
-    const myNumber = "+234 801 234 5678";
+    const myNumber = "+234 801 234 5678"; // Replace with actual user's number
     if (phoneType === "pickup") {
       send("text", myNumber, "pickup-phone");
     } else {
@@ -331,28 +342,26 @@ export default function MarketSelectionScreen({
 
   return (
     <Onboarding darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
-      <div className="w-full max-w-2xl mx-auto relative flex flex-col" style={{ height: 'calc(100vh - 100px)' }}>
-        {/* Scrollable Messages Area */}
+      <div
+        className="w-full h-screen max-w-2xl mx-auto flex flex-col"
+      >
         <div
           ref={listRef}
-          className="flex-1 overflow-y-scroll marketSelection p-3 pb-24"
+          className="flex-1 overflow-y-auto p-3 marketSelection pb-40"
         >
-          {/* Messages */}
-          <div>
-            {messages.map((m) => (
-              <p className="mx-auto" key={m.id}>
-                <Message
-                  m={m}
-                  showCursor={false}
-                  onChooseDeliveryClick={m.hasChooseDeliveryButton ? handleChooseDeliveryClick : undefined}
-                  onUseMyNumberClick={m.hasUseMyNumberButton ? () => handleUseMyNumber(m.phoneNumberType) : undefined}
-                />
-              </p>
-            ))}
-          </div>
+          <div className="pb-10"></div>
+          {messages.map((m) => (
+            <p className="mx-auto" key={m.id}>
+              <Message
+                m={m}
+                showCursor={false}
+                onChooseDeliveryClick={m.hasChooseDeliveryButton ? handleChooseDeliveryClick : undefined}
+                onUseMyNumberClick={m.hasUseMyNumberButton ? () => handleUseMyNumber(m.phoneNumberType) : undefined}
+              />
+            </p>
+          ))}
 
-          {/* Market/Location Buttons */}
-          <div className={`space-y-1 mt-3 ${isDeliveryMode ? 'pb-3' : ''}`}>
+          <div className={`space-y-1 -mt-1 max-h-96 overflow-y-auto ${isDeliveryMode ? '-mt-6 pb-5' : ''}`}>
             {searchTerm &&
               filteredMarkets.map((market) => (
                 <Button
@@ -372,6 +381,7 @@ export default function MarketSelectionScreen({
                 </Button>
               ))}
 
+            {/* Find on map - only for location selection, no number */}
             {showLocationButtons && !isDeliveryMode && !isProcessing && !showPhoneInput && (
               <Button
                 variant="text"
@@ -387,6 +397,7 @@ export default function MarketSelectionScreen({
               </Button>
             )}
 
+            {/* View saved locations for location selection */}
             {showLocationButtons && !isProcessing && !showPhoneInput && (
               <Button
                 variant="text"
@@ -403,54 +414,40 @@ export default function MarketSelectionScreen({
               </Button>
             )}
           </div>
-
-          {/* Scroll anchor */}
-          <div ref={messagesEndRef} />
         </div>
+      </div>
 
-        
-        <div className="absolute -bottom-5 left-0 right-0 p-3 shadow-lg">
-          {showCustomInput && !showPhoneInput && (
-            <CustomInput
-              countryRestriction="us"
-              stateRestriction="ny"
-              setMessages={setMessages}
-              showIcons={false}
-              showMic={false}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder={`Search for a ${isErrandService ? "market" : "location"}...`}
-              searchIcon={<Search className="h-4 w-4" />}
-              send={(type, text) => {
-                if (currentStep === "pickup-location") {
-                  send(type, text, "pickup-location");
-                } else if (currentStep === "market-location") {
-                  send(type, text, "market-location");
-                }
-              }}
-            />
-          )}
+      {/* Location Search Input */}
+      <div className="max-w-2xl w-full mx-auto px-4 absolute bottom-0 left-0 right-0 pb-6 bg-white dark:bg-black pt-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+        {showCustomInput && !showPhoneInput && (
+          <CustomInput
+            countryRestriction="us"
+            stateRestriction="ny"
+            showMic={false}
+            showIcons={false}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={`Search for a ${isErrandService ? "market" : "location"}...`}
+            send={(type, text) => {
+              if (currentStep === "pickup-location") send(type, text, "pickup-location");
+              else if (currentStep === "market-location") send(type, text, "market-location");
+            }}
+          />
+        )}
 
-          {showPhoneInput && (
-            <CustomInput
-              setMessages={setMessages}
-              showIcons={false}
-              showMic={false}
-              value={phoneNumberInput}
-              onChange={(e) => setPhoneNumberInput(e.target.value)}
-              placeholder="Enter phone number"
-              send={(type, text) => {
-                if (currentStep === "pickup-phone") {
-                  send(type, text, "pickup-phone");
-                  setPhoneNumberInput("");
-                } else if (currentStep === "dropoff-phone") {
-                  send(type, text, "dropoff-phone");
-                  setPhoneNumberInput("");
-                }
-              }}
-            />
-          )}
-        </div>
+        {showPhoneInput && (
+          <CustomInput
+            value={phoneNumberInput}
+            onChange={(e) => setPhoneNumberInput(e.target.value)}
+            placeholder="Enter phone number"
+            showMic={false}
+            showIcons={false}
+            send={(type, text) => {
+              if (currentStep === "pickup-phone") send(type, text, "pickup-phone");
+              else if (currentStep === "dropoff-phone") send(type, text, "dropoff-phone");
+            }}
+          />
+        )}
       </div>
     </Onboarding>
   );

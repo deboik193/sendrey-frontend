@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Card, CardBody, Chip } from "@material-tailwind/react";
 import { useDispatch, useSelector } from "react-redux";
 import { Star, X } from "lucide-react";
 import { fetchNearbyRunners } from "../../Redux/runnerSlice";
 import BarLoader from "../common/BarLoader";
 import { useSocket } from "../../hooks/useSocket";
+import { updateUserStatus } from "../../Redux/userSlice";
 
 export default function RunnerSelectionScreen({
   selectedVehicle,
@@ -60,6 +61,10 @@ export default function RunnerSelectionScreen({
       setTimeout(() => setIsVisible(true), 10);
     } else if (!isOpen) {
       setIsVisible(false);
+
+      setIsWaitingForRunner(false);
+      setSelectedRunnerId(null);
+      setRequestSent(false);
     }
   }, [isOpen, dispatch, selectedService, selectedVehicle, userLocation]);
 
@@ -82,61 +87,74 @@ export default function RunnerSelectionScreen({
         if (runner) {
           setIsWaitingForRunner(false);
           setRequestSent(false);
+          setSelectedRunnerId(null);
 
           if (onSelectRunner) {
             onSelectRunner(runner);
           }
-          handleClose();
+
+          // Close after a small delay to ensure state updates
+          setTimeout(() => {
+            handleClose();
+          }, 100);
         }
       }
     };
 
     socket.on('runnerAccepted', handleRunnerAccepted);
-    
+
     return () => {
       if (socket && socket.off) {
         socket.off('runnerAccepted', handleRunnerAccepted);
         console.log(`Detached 'runnerAccepted' listener for runner ${selectedRunnerId}`);
       }
     };
-  }, [socket, isWaitingForRunner, selectedRunnerId, nearbyRunners, onSelectRunner]);
+  }, [socket, isWaitingForRunner, selectedRunnerId, nearbyRunners, onSelectRunner, handleClose]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsVisible(false);
     setIsWaitingForRunner(false);
     setSelectedRunnerId(null);
     setTimeout(() => {
       if (typeof onClose === "function") onClose();
     }, 200);
-  };
+  }, [onClose]);
 
-  const handleRunnerClick = (runner) => {
-    if (isWaitingForRunner) return; // Prevent clicking while waiting
-
+  const handleRunnerClick = async (runner) => {
     const runnerId = runner._id || runner.id;
     const userId = userData?._id;
+    // Set user as unavailable
+    try {
+      await dispatch(updateUserStatus({
+        userId: userId,
+        status: { isAvailable: false }
+      })).unwrap();
 
-    if (!socket || !isConnected || !userId) return;
+    } catch (error) {
+      console.error("Error updating user availability:", error);
+      return; // Stop if availability update fails
+    }
 
+    // ALWAYS show BarLoader when clicked
     setSelectedRunnerId(runnerId);
     setIsWaitingForRunner(true);
     setRequestSent(false);
 
-    // Build chatId and emit request to backend
-    if (socket && isConnected && userData?._id) {
-      const chatId = `user-${userData._id}-runner-${runnerId}`;
+    // If socket is connected, send the request
+    if (socket && isConnected && userId) {
+      const chatId = `user-${userId}-runner-${runnerId}`;
 
+      // Then send the runner request
       socket.emit('requestRunner', {
         runnerId,
-        userId: userData._id,
+        userId: userId,
         chatId,
         serviceType: selectedService
       });
 
-      console.log('Sent runner request:', { runnerId, userId: userData._id, chatId });
+      console.log('Sent runner request:', { runnerId, userId, chatId });
     } else {
-      console.error('Cannot request runner: missing socket, userData, or not connected');
-      setIsWaitingForRunner(false);
+      console.log('Socket not connected, showing loader anyway');
     }
   };
 
@@ -185,7 +203,6 @@ export default function RunnerSelectionScreen({
                         key={runner._id || runner.id}
                         className={`transition-all ${isThisRunnerWaiting ? 'opacity-70' : 'cursor-pointer hover:shadow-lg'}`}
                         onClick={() => handleRunnerClick(runner)}
-                        style={isThisRunnerWaiting ? { pointerEvents: 'none' } : {}}
                       >
                         <CardBody className="flex flex-row items-center p-3">
                           <img
@@ -225,7 +242,7 @@ export default function RunnerSelectionScreen({
                             </div>
                           </div>
 
-                          {/* Show BarLoader ONLY on clicked runner at flex-end */}
+                          {/* Show BarLoader when clicked */}
                           {isThisRunnerWaiting && (
                             <div className="ml-auto pl-3">
                               <BarLoader />

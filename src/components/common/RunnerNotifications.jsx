@@ -4,6 +4,8 @@ import { Card, CardBody, Chip } from "@material-tailwind/react";
 import { X, MapPin } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSocket } from "../../hooks/useSocket"
+import { useDispatch } from "react-redux";
+import { setRunnerOnlineStatus } from "../../Redux/runnerSlice";
 
 export default function RunnerNotifications({
   requests,
@@ -13,6 +15,7 @@ export default function RunnerNotifications({
   socket,
   isConnected,
 }) {
+  const dispatch = useDispatch();
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -26,11 +29,22 @@ export default function RunnerNotifications({
   }, [requests]);
 
   const handlePickService = async (user) => {
-    console.log("🎯 Runner accepting user:", user._id);
-    // console.log("🎯 Runner picked service:", request);
+    console.log("Runner accepting user:", user._id);
+
+    // set runner unavailable
+    try {
+      await dispatch(setRunnerOnlineStatus({
+        userId: runnerId,
+        isOnline: true,
+        isAvailable: false
+      })).unwrap();
+    } catch (error) {
+      console.error("Error setting runner status:", error);
+      return;
+    }
 
     const chatId = `user-${user._id}-runner-${runnerId}`;
-    console.log("🎯 Chat ID:", chatId);
+    console.log("Chat ID:", chatId);
 
     if (socket && isConnected) {
       try {

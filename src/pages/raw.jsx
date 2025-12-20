@@ -28,6 +28,11 @@ import { InitialRunnerMessage } from "../components/common/InitialRunnerMessage"
 import { sendOrderStatusMessage } from "../components/common/OrderStatusMessage";
 import RunnerChatScreen from "../components/screens/RunnerChatScreen";
 
+import { Profile } from './Profile';
+import { Location } from './Location';
+import { Wallet } from './Wallet';
+import { OngoingOrders } from './OngoingOrders';
+
 // --- Mock Data ---
 const contacts = [
   {
@@ -71,6 +76,9 @@ export default function WhatsAppLikeChat() {
   const [text, setText] = useState("");
   const [activeModal, setActiveModal] = useState(null);
   const serviceTypeRef = useRef(null);
+
+  // for contactInfo
+  const [currentView, setCurrentView] = useState('chat');
 
   // flows
   const [showOrderFlow, setShowOrderFlow] = useState(false);
@@ -407,6 +415,80 @@ export default function WhatsAppLikeChat() {
     }
   };
 
+  const renderView = () => {
+    const handleBack = () => setCurrentView('chat');
+
+    switch (currentView) {
+      case 'profile':
+        return <Profile darkMode={dark}  onBack={handleBack} />;
+      case 'location':
+        return <Location darkMode={dark}  onBack={handleBack} />;
+      case 'wallet':
+        return <Wallet darkMode={dark}  onBack={handleBack} />;
+      case 'ongoing-orders':
+        return <OngoingOrders darkMode={dark}  onBack={handleBack} />;
+      case 'chat':
+      default:
+        return (
+          <div className="mx-auto max-w-[1400px] h-[calc(100vh-0px)] lg:h-screen grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)_360px]">
+            {/* Left Sidebar */}
+            <aside className="hidden lg:flex flex-col border-r dark:border-white/10 border-gray-200 bg-white/5/10 backdrop-blur-xl">
+              <SidebarContent active={active} setActive={setActive} />
+            </aside>
+
+            {/* Main Chat Area - RunnerChatScreen component */}
+            <RunnerChatScreen
+              active={active}
+              selectedUser={selectedUser}
+              isChatActive={isChatActive}
+              messages={messages}
+              text={text}
+              setText={setText}
+              dark={dark}
+              setDark={setDark}
+              isCollectingCredentials={isCollectingCredentials}
+              credentialStep={credentialStep}
+              credentialQuestions={credentialQuestions}
+              needsOtpVerification={needsOtpVerification}
+              registrationComplete={registrationComplete}
+              canResendOtp={canResendOtp}
+              send={send}
+              handleMessageClick={handleMessageClick}
+              pickUp={pickUp}
+              runErrand={runErrand}
+              setDrawerOpen={setDrawerOpen}
+              setInfoOpen={setInfoOpen}
+              nearbyUsers={nearbyUsers}
+              runnerId={runnerId}
+              onPickService={handlePickService}
+              socket={socket}
+              isConnected={isConnected}
+              runnerData={runnerData}
+              showOrderFlow={showOrderFlow}
+              setShowOrderFlow={setShowOrderFlow}
+              handleOrderStatusClick={handleOrderStatusClick}
+              isAttachFlowOpen={isAttachFlowOpen}
+              setIsAttachFlowOpen={setIsAttachFlowOpen}
+              handleLocationClick={handleLocationClick}
+              handleAttachClick={handleAttachClick}
+              completedOrderStatuses={completedOrderStatuses}
+              setCompletedOrderStatuses={setCompletedOrderStatuses}
+            />
+
+            {/* Right Info Panel */}
+            <aside className="hidden lg:block border-l dark:border-white/10 border-gray-200">
+              <ContactInfo
+                contact={active}
+                onClose={() => setInfoOpen(false)}
+                setActiveModal={setActiveModal}
+                onNavigate={setCurrentView}
+              />
+            </aside>
+          </div>
+        );
+    }
+  };
+
   return (
     <div className="bg-white dark:bg-black-100">
       <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-slate-950 to-black text-white">
@@ -431,60 +513,7 @@ export default function WhatsAppLikeChat() {
           </div>
         </div>
 
-        <div className="mx-auto max-w-[1400px] h-[calc(100vh-0px)] lg:h-screen grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)_360px]">
-          {/* Left Sidebar */}
-          <aside className="hidden lg:flex flex-col border-r dark:border-white/10 border-gray-200 bg-white/5/10 backdrop-blur-xl">
-            <SidebarContent active={active} setActive={setActive} />
-          </aside>
-
-          {/* Main Chat Area - RunnerChatScreen component */}
-          <RunnerChatScreen
-            active={active}
-            selectedUser={selectedUser}
-            isChatActive={isChatActive}
-            messages={messages}
-            text={text}
-            setText={setText}
-            dark={dark}
-            setDark={setDark}
-            isCollectingCredentials={isCollectingCredentials}
-            credentialStep={credentialStep}
-            credentialQuestions={credentialQuestions}
-            needsOtpVerification={needsOtpVerification}
-            registrationComplete={registrationComplete}
-            canResendOtp={canResendOtp}
-            send={send}
-            handleMessageClick={handleMessageClick}
-            pickUp={pickUp}
-            runErrand={runErrand}
-            setDrawerOpen={setDrawerOpen}
-            setInfoOpen={setInfoOpen}
-            nearbyUsers={nearbyUsers}
-            runnerId={runnerId}
-            onPickService={handlePickService}
-            socket={socket}
-            isConnected={isConnected}
-            runnerData={runnerData}
-            showOrderFlow={showOrderFlow}
-            setShowOrderFlow={setShowOrderFlow}
-            handleOrderStatusClick={handleOrderStatusClick}
-            isAttachFlowOpen={isAttachFlowOpen}
-            setIsAttachFlowOpen={setIsAttachFlowOpen}
-            handleLocationClick={handleLocationClick}
-            handleAttachClick={handleAttachClick}
-            completedOrderStatuses={completedOrderStatuses}
-            setCompletedOrderStatuses={setCompletedOrderStatuses}
-          />
-
-          {/* Right Info Panel */}
-          <aside className="hidden lg:block border-l dark:border-white/10 border-gray-200">
-            <ContactInfo
-              contact={active}
-              onClose={() => setInfoOpen(false)}
-              setActiveModal={setActiveModal}
-            />
-          </aside>
-        </div>
+        {renderView()}
 
         {/* Drawers (mobile) */}
         <Drawer
@@ -506,7 +535,12 @@ export default function WhatsAppLikeChat() {
           placement="right"
           className="p-0 bg-white dark:bg-black-100 backdrop-blur-xl"
         >
-          <ContactInfo contact={active} onClose={() => setInfoOpen(false)} setActiveModal={setActiveModal} />
+          <ContactInfo
+            contact={active}
+            onClose={() => setInfoOpen(false)}
+            setActiveModal={setActiveModal}
+            onNavigate={setCurrentView}
+          />
         </Drawer>
 
         {activeModal && (
@@ -575,14 +609,20 @@ function SidebarContent({ active, setActive, onClose }) {
   );
 }
 
-function ContactInfo({ contact, onClose, setActiveModal }) {
+function ContactInfo({ contact, onClose, setActiveModal, onNavigate, onBack }) {
   const [dark] = useDarkMode();
-  const navigate = useNavigate();
 
   const handleModalClick = (modalType) => {
     onClose?.();
     if (setActiveModal) {
       setActiveModal(modalType);
+    }
+  };
+
+  const handleNavigation = (view) => {
+    onClose?.();
+    if (onNavigate) {
+      onNavigate(view);
     }
   };
 
@@ -597,22 +637,22 @@ function ContactInfo({ contact, onClose, setActiveModal }) {
       </div>
 
       <div className="cursor-pointer hover:bg-gray-200 dark:hover:bg-black-200 transition-colors"
-        onClick={() => navigate('/profile', { state: { darkMode: dark } })}>
+        onClick={() => handleNavigation('profile')}>
         <h3 className="px-4 py-5 font-bold text-md text-black-200 dark:text-gray-300">Profile</h3>
       </div>
 
       <div className="cursor-pointer hover:bg-gray-200 dark:hover:bg-black-200 transition-colors"
-        onClick={() => navigate('/locations', { state: { darkMode: dark } })}>
+        onClick={() => handleNavigation('location')}>
         <h3 className="px-4 py-5 font-bold text-md text-black-200 dark:text-gray-300">Locations</h3>
       </div>
 
       <div className="cursor-pointer hover:bg-gray-200 dark:hover:bg-black-200 transition-colors"
-        onClick={() => navigate('/wallet', { state: { darkMode: dark } })}>
+        onClick={() => handleNavigation('wallet')}>
         <h3 className="px-4 py-5 font-bold text-md text-black-200 dark:text-gray-300">Wallet</h3>
       </div>
 
       <div className="cursor-pointer hover:bg-gray-200 dark:hover:bg-black-200 transition-colors"
-        onClick={() => navigate('/ongoing-orders', { state: { darkMode: dark } })}>
+        onClick={() => handleNavigation('ongoing-orders')}>
         <h3 className="px-4 py-5 font-bold text-md text-black-200 dark:text-gray-300">Ongoing Orders</h3>
       </div>
 

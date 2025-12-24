@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, CheckCheck, Smile, Download, FileText, Trash2, Edit2 } from "lucide-react";
 import { Button } from "@material-tailwind/react";
 
-export default function Message({ m, onReact, onDelete, onEdit, onMessageClick, canResendOtp, onConnectButtonClick, onChooseDeliveryClick, showCursor = true }) {
+export default function Message({ m, onReact, onDelete, onEdit, onMessageClick, canResendOtp, onConnectButtonClick, onChooseDeliveryClick, showCursor = true, onUseMyNumberClick }) {
   const isMe = m.from === "me";
   const isSystem = m.from === "system";
   const [showContextMenu, setShowContextMenu] = useState(false);
@@ -89,16 +89,27 @@ export default function Message({ m, onReact, onDelete, onEdit, onMessageClick, 
   };
 
   if (m.messageType === 'system' && !m.runnerInfo) {
+    const getTextColor = () => {
+      if (m.text === "Invoice accepted" || m.style === "success") {
+        return "text-primary dark:text-primary";
+      }
+      if (m.text === "Invoice Declined" || m.style === "error") {
+        return "text-red-600 dark:text-red-400";
+      }
+      return "text-gray-600 dark:text-gray-400";
+    };
+
     return (
       <div className="flex justify-center mb-3">
-        <div className=" px-4 py-2  mr-auto ml-auto">
-          <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
-            {m.text} 
+        <div className="px-4 py-2 mr-auto ml-auto">
+          <p className={`text-sm ${getTextColor()} text-center font-medium`}>
+            {m.text}
           </p>
         </div>
       </div>
     );
   }
+
 
   if (m.messageType === 'profile-card' && m.runnerInfo) {
     return (
@@ -120,7 +131,7 @@ export default function Message({ m, onReact, onDelete, onEdit, onMessageClick, 
               30 Runs
             </span>
           </div>
-          
+
           <div className="bg-gray-200 dark:bg-black-100 px-4 py-3 rounded-2xl  sm:max-w-[53%] mr-auto">
             <p className="text-sm dark:text-white text-black-200 text-start">
               {m.runnerInfo.bio}
@@ -283,6 +294,31 @@ export default function Message({ m, onReact, onDelete, onEdit, onMessageClick, 
         </div>
       );
     }
+
+
+    if (m.hasUseMyNumberButton) {
+      // use second "connect to runner" text
+      const lastIndex = m.text.lastIndexOf('Use My Phone Number');
+      const beforeText = m.text.substring(0, lastIndex);
+      return (
+        <div>
+          {beforeText}
+          <div className="mt-3">
+            <Button
+              className="w-full bg-primary text-white"
+              onClick={(e) => {
+                e.stopPropagation();
+                onUseMyNumberClick && onUseMyNumberClick();
+              }}
+            >
+              Use My Phone Number
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+
     // Text message (default)
     return <div>{m.text}</div>;
   };
@@ -306,7 +342,7 @@ export default function Message({ m, onReact, onDelete, onEdit, onMessageClick, 
           ${isMe
               ? "bg-primary border-primary text-white"
               : isSystem
-                ? "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                ? "bg-transparent text-gray-600 dark:text-gray-400"
                 : m.isResendLink
                   ? "bg-gray-100 dark:bg-gray-800 text-blue-600 dark:text-blue-400 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer"
                   : "bg-gray-1001 dark:bg-black-100 dark:border-black-100 border-gray-1001 dark:text-gray-1002 text-black-200"

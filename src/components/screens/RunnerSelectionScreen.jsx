@@ -5,7 +5,6 @@ import { Star, X } from "lucide-react";
 import { fetchNearbyRunners } from "../../Redux/runnerSlice";
 import BarLoader from "../common/BarLoader";
 import { useSocket } from "../../hooks/useSocket";
-import { updateUserStatus } from "../../Redux/userSlice";
 
 export default function RunnerSelectionScreen({
   selectedVehicle,
@@ -21,14 +20,21 @@ export default function RunnerSelectionScreen({
   const [locationError, setLocationError] = useState(null);
   const [isWaitingForRunner, setIsWaitingForRunner] = useState(false);
   const [selectedRunnerId, setSelectedRunnerId] = useState(null);
-  const [requestSent, setRequestSent] = useState(false);
 
   const dispatch = useDispatch();
   const { nearbyRunners, loading, error } = useSelector((state) => state.runners);
 
-
   const SOCKET_URL = "http://localhost:4001";
   const { socket, isConnected } = useSocket(SOCKET_URL);
+
+  const handleClose = useCallback(() => {
+    setIsVisible(false);
+    setIsWaitingForRunner(false);
+    setSelectedRunnerId(null);
+    setTimeout(() => {
+      if (typeof onClose === "function") onClose();
+    }, 200);
+  }, [onClose]);
 
   // Get user's current location
   useEffect(() => {
@@ -61,39 +67,34 @@ export default function RunnerSelectionScreen({
       setTimeout(() => setIsVisible(true), 10);
     } else if (!isOpen) {
       setIsVisible(false);
-
       setIsWaitingForRunner(false);
       setSelectedRunnerId(null);
-      setRequestSent(false);
     }
   }, [isOpen, dispatch, selectedService, selectedVehicle, userLocation]);
 
-
-  // Listen for runner acceptance
+  // Listen for runner acceptance AND chat join events
   useEffect(() => {
     if (!socket || !isWaitingForRunner || !selectedRunnerId) return;
 
-    console.log(`Attaching 'runnerAccepted' listener for runner ${selectedRunnerId}`);
+    console.log(`Listening for runner events for runner ${selectedRunnerId}`);
 
+    // Runner accepted (means runner is NOW in the chat)
     const handleRunnerAccepted = (data) => {
-      console.log('Runner accepted received from server:', data);
+      console.log('runnerAccepted event received:', data);
 
-      // Check if the acceptance is for the runner we are currently waiting for
-      if (data.runnerId === selectedRunnerId) {
-        console.log('Runner accepted! Navigating to chat...');
+      if (data.runnerId === selectedRunnerId && data.runnerInRoom) {
+        console.log('Runner is in chat room! User can proceed immediately.');
 
         const runner = nearbyRunners.find(r => (r._id || r.id) === data.runnerId);
 
         if (runner) {
           setIsWaitingForRunner(false);
-          setRequestSent(false);
           setSelectedRunnerId(null);
 
           if (onSelectRunner) {
             onSelectRunner(runner);
           }
 
-          // Close after a small delay to ensure state updates
           setTimeout(() => {
             handleClose();
           }, 100);
@@ -101,61 +102,81 @@ export default function RunnerSelectionScreen({
       }
     };
 
+    // User successfully joined chat (after checking runner presence)
+    const handleChatJoinSuccess = (data) => {
+      console.log('chatJoinSuccess event received:', data);
+
+      if (data.runnerId === selectedRunnerId) {
+        console.log('User successfully joined chat!');
+
+        const runner = nearbyRunners.find(r => (r._id || r.id) === data.runnerId);
+
+        if (runner) {
+          setIsWaitingForRunner(false);
+          setSelectedRunnerId(null);
+
+          if (onSelectRunner) {
+            onSelectRunner(runner);
+          }
+
+          setTimeout(() => {
+            handleClose();
+          }, 100);
+        }
+      }
+    };
+
+    // User must wait for runner
+    const handleWaitingForRunner = (data) => {
+      console.log('waitingForRunner event received:', data);
+      // Keep showing loader, user is waiting
+    };
+
     socket.on('runnerAccepted', handleRunnerAccepted);
+    socket.on('chatJoinSuccess', handleChatJoinSuccess);
+    socket.on('waitingForRunner', handleWaitingForRunner);
 
     return () => {
-      if (socket && socket.off) {
-        socket.off('runnerAccepted', handleRunnerAccepted);
-        console.log(`Detached 'runnerAccepted' listener for runner ${selectedRunnerId}`);
-      }
+      socket.off('runnerAccepted', handleRunnerAccepted);
+      socket.off('chatJoinSuccess', handleChatJoinSuccess);
+      socket.off('waitingForRunner', handleWaitingForRunner);
+      console.log(`Stopped listening for runner events`);
     };
   }, [socket, isWaitingForRunner, selectedRunnerId, nearbyRunners, onSelectRunner, handleClose]);
 
-  const handleClose = useCallback(() => {
-    setIsVisible(false);
-    setIsWaitingForRunner(false);
-    setSelectedRunnerId(null);
-    setTimeout(() => {
-      if (typeof onClose === "function") onClose();
-    }, 200);
-  }, [onClose]);
-
-  const handleRunnerClick = async (runner) => {
+  const handleRunnerClick = (runner) => {
     const runnerId = runner._id || runner.id;
     const userId = userData?._id;
-    // Set user as unavailable
-    try {
-      await dispatch(updateUserStatus({
-        userId: userId,
-        status: { isAvailable: false }
-      })).unwrap();
 
-    } catch (error) {
-      console.error("Error updating user availability:", error);
-      return; // Stop if availability update fails
+    if (!socket || !isConnected || !userId) {
+      console.error('Socket not connected or userId missing');
+      return;
     }
 
-    // ALWAYS show BarLoader when clicked
+    // Show loader and set waiting state
     setSelectedRunnerId(runnerId);
     setIsWaitingForRunner(true);
-    setRequestSent(false);
 
-    // If socket is connected, send the request
-    if (socket && isConnected && userId) {
-      const chatId = `user-${userId}-runner-${runnerId}`;
+    const chatId = `user-${userId}-runner-${runnerId}`;
 
-      // Then send the runner request
-      socket.emit('requestRunner', {
-        runnerId,
-        userId: userId,
-        chatId,
-        serviceType: selectedService
-      });
+    // Send runner request
+    socket.emit('requestRunner', {
+      runnerId,
+      userId,
+      chatId,
+      serviceType: selectedService
+    });
 
-      console.log('Sent runner request:', { runnerId, userId, chatId });
-    } else {
-      console.log('Socket not connected, showing loader anyway');
-    }
+    console.log('Sent runner request:', { runnerId, userId, chatId });
+
+    // Immediately attempt to join chat (will check if runner is already there)
+    socket.emit('userJoinChat', {
+      userId,
+      runnerId,
+      chatId
+    });
+
+    console.log('Sent userJoinChat:', { userId, runnerId, chatId });
   };
 
   if (!isOpen) return null;
@@ -185,8 +206,6 @@ export default function RunnerSelectionScreen({
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
-
-            {/* Runners List */}
             {!loading && !locationError && nearbyRunners.length > 0 && (
               <div className="max-w-md mx-auto">
                 <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl p-4 mb-4">
@@ -202,7 +221,7 @@ export default function RunnerSelectionScreen({
                       <Card
                         key={runner._id || runner.id}
                         className={`transition-all ${isThisRunnerWaiting ? 'opacity-70' : 'cursor-pointer hover:shadow-lg'}`}
-                        onClick={() => handleRunnerClick(runner)}
+                        onClick={() => !isWaitingForRunner && handleRunnerClick(runner)}
                       >
                         <CardBody className="flex flex-row items-center p-3">
                           <img
@@ -242,7 +261,6 @@ export default function RunnerSelectionScreen({
                             </div>
                           </div>
 
-                          {/* Show BarLoader when clicked */}
                           {isThisRunnerWaiting && (
                             <div className="ml-auto pl-3">
                               <BarLoader />
@@ -256,7 +274,6 @@ export default function RunnerSelectionScreen({
               </div>
             )}
 
-            {/* No Runners Found */}
             {!loading && !locationError && nearbyRunners.length === 0 && userLocation && (
               <div className="text-center py-8">
                 <p className="text-gray-600 dark:text-gray-400 text-lg mb-2">

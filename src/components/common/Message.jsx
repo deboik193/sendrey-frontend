@@ -5,7 +5,8 @@ import { Button } from "@material-tailwind/react";
 
 export default function Message({ m, onReact, onDelete, onEdit, onMessageClick, canResendOtp, onConnectButtonClick, onChooseDeliveryClick, showCursor = true, onUseMyNumberClick }) {
   const isMe = m.from === "me";
-  const isSystem = m.from === "system";
+
+  const isSystem = m.from === "system" || m.messageType === "system" || m.type === "system";
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
   const [isEditing, setIsEditing] = useState(false);
@@ -88,7 +89,7 @@ export default function Message({ m, onReact, onDelete, onEdit, onMessageClick, 
     setIsEditing(false);
   };
 
-  if (m.messageType === 'system' && !m.runnerInfo) {
+  if ((m.messageType === 'system' || m.type === 'system') && !m.runnerInfo) {
     const getTextColor = () => {
       if (m.text === "Invoice accepted" || m.style === "success") {
         return "text-primary dark:text-primary";
@@ -111,7 +112,7 @@ export default function Message({ m, onReact, onDelete, onEdit, onMessageClick, 
   }
 
 
-  if (m.messageType === 'profile-card' && m.runnerInfo) {
+  if ((m.messageType === 'profile-card' || m.type === 'profile-card') && m.runnerInfo) {
     return (
       <div className="flex justify-center mb-4">
         <div className="flex flex-col items-center gap-3">
@@ -338,7 +339,7 @@ export default function Message({ m, onReact, onDelete, onEdit, onMessageClick, 
         <div
           onClick={!isSystem ? handleLeftClick : undefined}
           onContextMenu={!isSystem ? handleContextMenu : undefined}
-          className={`shadow-sm backdrop-blur-sm rounded-2xl px-4 py-3 text-sm font-normal relative ${showCursor ? 'cursor-pointer' : ''}
+          className={`backdrop-blur-sm rounded-2xl px-4 py-3 text-sm font-normal relative ${showCursor ? 'cursor-pointer' : ''}
           ${isMe
               ? "bg-primary border-primary text-white"
               : isSystem

@@ -37,18 +37,13 @@ const OrderStatusFlow = ({
 
     const handleStatusClick = (statusKey) => {
         if (statusKey === "send_invoice") {
-            // Hide the full view and show create invoice screen
+            // Just open the screen, DON'T mark as completed yet
             setShowFullView(false);
             setShowCreateInvoiceScreen(true);
-
-            setCompletedStatuses?.(prev =>
-                prev.includes(statusKey) ? prev : [...prev, statusKey]
-            );
-
-            return; // ⛔️ DO NOT CLOSE
+            return; // ⛔️ DO NOT mark complete or close
         }
 
-        // Mark status as completed
+        // Mark status as completed for other statuses
         if (setCompletedStatuses) {
             setCompletedStatuses(prev => {
                 if (prev.includes(statusKey)) return prev;
@@ -65,6 +60,32 @@ const OrderStatusFlow = ({
         setTimeout(() => {
             onClose();
         }, 800);
+    };
+
+    // Handle when invoice is actually sent successfully
+    const handleInvoiceSent = () => {
+        console.log('Invoice sent successfully, marking send_invoice as complete');
+        
+        // NOW mark as completed
+        if (setCompletedStatuses) {
+            setCompletedStatuses(prev => {
+                if (prev.includes("send_invoice")) return prev;
+                return [...prev, "send_invoice"];
+            });
+        }
+
+        setShowCreateInvoiceScreen(false);
+        // Close everything after invoice is sent
+        onClose();
+    };
+
+    // Handle when user closes invoice screen without sending
+    const handleInvoiceClose = () => {
+        console.log('Invoice screen closed without sending');
+        
+        setShowCreateInvoiceScreen(false);
+        // Reopen the status flow
+        setShowFullView(true);
     };
 
     useEffect(() => {
@@ -252,16 +273,8 @@ const OrderStatusFlow = ({
                         runnerId={runnerId}
                         userId={userId}
                         marketData={orderData?.marketData}
-                        onClose={() => {
-                            setShowCreateInvoiceScreen(false);
-                            // Optionally reopen the status flow
-                            setShowFullView(true);
-                        }}
-                        onInvoiceSent={() => {
-                            setShowCreateInvoiceScreen(false);
-                            // Close everything after invoice is sent
-                            onClose();
-                        }}
+                        onClose={handleInvoiceClose}
+                        onInvoiceSent={handleInvoiceSent}
                     />
                 </div>
             )}

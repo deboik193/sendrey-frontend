@@ -7,7 +7,6 @@ export const InitialRunnerMessage = async ({
   chatId,
   sendMessage
 }) => {
-  // Build full name, return empty string if no lastName
   const fullName = `${runnerData?.firstName || ''} ${runnerData?.lastName || ''}`.trim();
 
   const messages = [
@@ -29,7 +28,6 @@ export const InitialRunnerMessage = async ({
     },
   ];
 
-
   for (const msg of messages) {
     await new Promise(resolve => setTimeout(resolve, msg.delay));
 
@@ -46,39 +44,42 @@ const createMessage = (msg, runnerId) => {
     id: Date.now() + Math.random(),
     time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     senderId: runnerId,
-    senderType: "runner"
+    senderType: "runner",
+    status: 'sent'
   };
 
   switch (msg.type) {
     case 'system':
       return {
         ...baseMessage,
-        from: 'system',
+        from: 'system', 
         messageType: 'system',
+        type: 'system', 
         text: msg.text
       };
 
     case 'profile-card':
       return {
         ...baseMessage,
-        from: 'system', // System so it's centered
+        from: 'system', 
         messageType: 'profile-card',
+        type: 'profile-card', 
         runnerInfo: msg.runnerInfo
       };
 
     case 'text':
       return {
         ...baseMessage,
-        from: 'me',
-        status: 'sent',
+        from: 'runner', 
+        type: 'text',
         text: msg.text
       };
 
     case 'image':
       return {
         ...baseMessage,
-        from: 'me',
-        status: 'sent',
+        from: 'runner', 
+        type: 'image',
         messageType: 'image',
         imageUrl: msg.imageUrl,
         caption: msg.caption || ''

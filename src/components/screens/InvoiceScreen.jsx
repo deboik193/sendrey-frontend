@@ -127,25 +127,24 @@ export const InvoiceScreen = ({
   return (
     <>
       {/* Invoice Preview Card - Shows in chat */}
-      <div className={`border rounded-lg p-4 max-w-sm ${darkMode ? "border-primary bg-gray-900" : "border-primary bg-white"
+      <div className={`border rounded-lg p-4 w-60 ${darkMode ? "border-primary bg-gray-300" : "border-primary bg-white"
         }`}>
         <div className="flex justify-between items-center mb-3">
           <div className="flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-primary" />
-            <p className={`font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>
+            <p className={`font-semibold ${darkMode ? "text-white" : "text-black-200/50"}`}>
               Invoice
             </p>
           </div>
-          <p className={`text-sm ${darkMode ? "text-gray-800" : "text-gray-600"}`}>
-            {invoice.id}
+          <p className={`text-sm ${darkMode ? "text-primary" : "text-primary"}`}>
+            {invoice.id.slice(0, 11)}...
           </p>
         </div>
 
         <div className="mb-4">
-          <p className={`text-sm mb-1 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+          <p className={`text-md mb-1 ${darkMode ? "text-primary" : "text-primary"}`}>
             Grand Total
           </p>
-          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+          <p className={`text-2xl font-bold ${darkMode ? "text-white" : "text-black-200/50"}`}>
             ₦{invoice.total.toLocaleString()}
           </p>
         </div>
@@ -174,7 +173,7 @@ export const InvoiceScreen = ({
           />
 
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className={`relative w-full max-w-md rounded-3xl overflow-hidden ${darkMode ? "bg-gray-400/50" : "bg-white"
+            <div className={`relative w-full max-w-md rounded-t-3xl overflow-hidden ${darkMode ? "bg-gray-400/50" : "bg-white"
               }`}>
               {/* Header */}
               <div className={`p-5 pb-4 border-b flex justify-center items-center ${darkMode ? "border-gray-800" : "border-gray-200"
@@ -209,20 +208,20 @@ export const InvoiceScreen = ({
                     <div
                       key={index}
                       className={`grid grid-cols-12 gap-2 p-3 text-sm ${index !== invoice.products.length - 1
-                          ? `border-b ${darkMode ? "border-gray-700" : "border-gray-200"}`
-                          : ""
+                        ? `border-b ${darkMode ? "border-gray-700" : "border-gray-200"}`
+                        : ""
                         }`}
                     >
-                      <div className={`col-span-5 ${darkMode ? "text-gray-200" : "text-gray-900"}`}>
+                      <div className={`col-span-5 ${darkMode ? "text-gray-200" : "text-black-200/50"}`}>
                         {product.description}
                       </div>
-                      <div className={`col-span-2 text-center ${darkMode ? "text-gray-200" : "text-gray-600"}`}>
+                      <div className={`col-span-2 text-center ${darkMode ? "text-gray-200" : "text-black-200/50"}`}>
                         {product.qty}
                       </div>
-                      <div className={`col-span-3 text-right ${darkMode ? "text-gray-200" : "text-gray-600"}`}>
+                      <div className={`col-span-3 text-right ${darkMode ? "text-gray-200" : "text-black-200/50"}`}>
                         ₦{product.UnitPrice.toLocaleString()}
                       </div>
-                      <div className={`col-span-2 text-right font-medium ${darkMode ? "text-gray-200" : "text-gray-900"}`}>
+                      <div className={`col-span-2 text-right font-medium ${darkMode ? "text-gray-200" : "text-black-200/50"}`}>
                         ₦{product.subtotal.toLocaleString()}
                       </div>
                     </div>
@@ -235,11 +234,11 @@ export const InvoiceScreen = ({
                 <div className="space-y-3 mb-6">
                   {invoice.items.map((item, index) => (
                     <div key={index} className="flex justify-between">
-                      <p className={darkMode ? "text-gray-200" : "text-gray-600"}>
+                      <p className={darkMode ? "text-gray-200" : "text-black-200/50"}>
                         {/* Subtotal etc */}
                         {item.name}
                       </p>
-                      <p className={`font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
+                      <p className={`font-medium ${darkMode ? "text-white" : "text-black-200/50"}`}>
                         ₦{item.amount.toLocaleString()}
                       </p>
                     </div>
@@ -249,10 +248,10 @@ export const InvoiceScreen = ({
                 {/* Total */}
                 <div className={`pt-4 border-t ${darkMode ? "border-gray-800" : "border-gray-200"}`}>
                   <div className="flex justify-between items-center">
-                    <p className={`text-lg font-semibold ${darkMode ? "text-gray-200" : "text-gray-900"}`}>
+                    <p className={`text-lg font-semibold ${darkMode ? "text-gray-200" : "text-black-200/50"}`}>
                       Grand Total
                     </p>
-                    <p className={`text-2xl font-bold ${darkMode ? "text-gray-200" : "text-gray-900"}`}>
+                    <p className={`text-2xl font-bold ${darkMode ? "text-gray-200" : "text-black-200/50"}`}>
                       ₦{invoice.total.toLocaleString()}
                     </p>
                   </div>
@@ -273,8 +272,8 @@ export const InvoiceScreen = ({
                   onClick={handleDeclineClick}
                   disabled={isProcessing}
                   className={`flex-1 rounded-full border-2 py-3 font-medium transition disabled:opacity-50 disabled:cursor-not-allowed ${darkMode
-                      ? "border-gray-700 bg-gray-800  text-gray-200"
-                      : "border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-700"
+                    ? "border-gray-700 bg-gray-800  text-gray-200"
+                    : "border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-700"
                     }`}
                 >
                   Decline
@@ -282,10 +281,14 @@ export const InvoiceScreen = ({
               </div>
 
               {/* Zigzag Bottom Design */}
-              <div className="relative h-4 overflow-hidden">
-                <div className={`absolute bottom-0 w-full h-4 ${darkMode ? "bg-gray-800" : "bg-gray-100"}`}
+              {/* Zigzag Bottom Design */}
+              <div className="relative h-4 overflow-hidden -mx-6">
+                <div
+                  className={`absolute bottom-0 w-full h-4`}
                   style={{
-                    clipPath: "polygon(0 0, 5% 50%, 10% 0, 15% 50%, 20% 0, 25% 50%, 30% 0, 35% 50%, 40% 0, 45% 50%, 50% 0, 55% 50%, 60% 0, 65% 50%, 70% 0, 75% 50%, 80% 0, 85% 50%, 90% 0, 95% 50%, 100% 0, 100% 100%, 0 100%)"
+                    background: darkMode ? "rgba(0, 0, 0, 0.95)" : "rgba(138, 128, 128, 1)",
+                    backdropFilter: "blur(10px)",
+                    clipPath: "polygon(0 0, 2.5% 100%, 5% 0, 7.5% 100%, 10% 0, 12.5% 100%, 15% 0, 17.5% 100%, 20% 0, 22.5% 100%, 25% 0, 27.5% 100%, 30% 0, 32.5% 100%, 35% 0, 37.5% 100%, 40% 0, 42.5% 100%, 45% 0, 47.5% 100%, 50% 0, 52.5% 100%, 55% 0, 57.5% 100%, 60% 0, 62.5% 100%, 65% 0, 67.5% 100%, 70% 0, 72.5% 100%, 75% 0, 77.5% 100%, 80% 0, 82.5% 100%, 85% 0, 87.5% 100%, 90% 0, 92.5% 100%, 95% 0, 97.5% 100%, 100% 0, 100% 100%, 0 100%)"
                   }}
                 />
               </div>
@@ -305,7 +308,7 @@ export const InvoiceScreen = ({
           <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
             <div className={`relative w-full max-w-sm rounded-2xl p-6 ${darkMode ? "bg-gray-900" : "bg-white"
               }`}>
-              <h3 className={`text-lg font-bold mb-3 text-center ${darkMode ? "text-white" : "text-gray-900"
+              <h3 className={`text-lg font-bold mb-3 text-center ${darkMode ? "text-white" : "text-black-200/50"
                 }`}>
                 Decline Invoice?
               </h3>
@@ -329,8 +332,8 @@ export const InvoiceScreen = ({
                   onClick={() => setShowDeclineConfirm(false)}
                   disabled={isProcessing}
                   className={`flex-1 rounded-full border-2 py-3 font-medium transition disabled:opacity-50 disabled:cursor-not-allowed ${darkMode
-                      ? "border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300"
-                      : "border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-700"
+                    ? "border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300"
+                    : "border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-700"
                     }`}
                 >
                   Cancel

@@ -1,31 +1,21 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   IconButton,
-  Button,
-  Input,
   Tooltip,
-  Avatar
 } from "@material-tailwind/react";
 import {
   Phone,
   Video,
-  Paperclip,
-  Mic,
-  Send,
-  ChevronLeft,
-  Square,
   MoreHorizontal,
 } from "lucide-react";
-import { motion } from "framer-motion";
 import Header from "../common/Header";
 import Message from "../common/Message";
-import StatusQuickReplies from "../common/StatusQuickReplies";
 import CustomInput from "../common/CustomInput";
 import { useSocket } from "../../hooks/useSocket";
-// import 
+import InvoiceScreen from "../screens/InvoiceScreen";
+import { TrackDeliveryScreen } from "./TrackDeliveryScreen";
 
-const initialMessages = [
-];
+const initialMessages = [];
 
 const HeaderIcon = ({ children, tooltip, onClick }) => (
   <Tooltip content={tooltip} placement="bottom" className="text-xs">
@@ -40,17 +30,12 @@ export default function ChatScreen({ runner, market, userData, darkMode, toggleD
   const [text, setText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [sidebar, setSidebar] = useState(false);
-  const [hasRunnerAccepted, setHasRunnerAccepted] = useState(false);
 
   const listRef = useRef(null);
   const fileInputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const recordingIntervalRef = useRef(null);
-  const inputRef = useRef(null);
-
-
 
   const SOCKET_URL = "http://localhost:4001";
   const { socket, joinChat, sendMessage, isConnected } = useSocket(SOCKET_URL);
@@ -73,7 +58,6 @@ export default function ChatScreen({ runner, market, userData, darkMode, toggleD
           }
         },
         (msg) => {
-          // ONLY add message if it's NOT from yourself
           if (msg.senderId !== userData?._id) {
             const formattedMsg = {
               ...msg,
@@ -87,12 +71,51 @@ export default function ChatScreen({ runner, market, userData, darkMode, toggleD
   }, [socket, chatId, isConnected, joinChat, userData?._id]);
 
   useEffect(() => {
+    if (!socket || !chatId) return;
+
+    const handleReceiveInvoice = ({ message, invoiceId, invoiceData }) => {
+      // Format message for consistency with existing messages
+      const formattedMsg = {
+        ...message,
+        from: message.from === 'system' ? 'system' : (message.senderId === userData?._id ? 'me' : 'them')
+      };
+      setMessages(prev => [...prev, formattedMsg]);
+    };
+
+    socket.on("receiveInvoice", handleReceiveInvoice);
+
+    return () => {
+      socket.off("receiveInvoice", handleReceiveInvoice);
+    };
+  }, [socket, chatId, userData?._id]);
+
+  // track runner
+  useEffect(() => {
+    if (!socket || !chatId) return;
+
+    const handleReceiveTrackRunner = ({ message, trackingData }) => {
+      const formattedMsg = {
+        ...message,
+        from: message.from === 'system' ? 'system' : (message.senderId === userData?._id ? 'me' : 'them'),
+        trackingData: trackingData
+      };
+      setMessages(prev => [...prev, formattedMsg]);
+    };
+
+    socket.on("receiveTrackRunner", handleReceiveTrackRunner);
+
+    return () => {
+      socket.off("receiveTrackRunner", handleReceiveTrackRunner);
+    };
+  }, [socket, chatId, userData?._id]);
+
+
+  useEffect(() => {
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Cleanup recording interval
   useEffect(() => {
     return () => {
       if (recordingIntervalRef.current) {
@@ -117,31 +140,11 @@ export default function ChatScreen({ runner, market, userData, darkMode, toggleD
     setMessages((p) => [...p, newMsg]);
     setText("");
 
-    // Send via socket
     if (socket) {
       sendMessage(chatId, newMsg);
     }
   };
 
-  const handleStatusSelect = (status) => {
-    const newMsg = {
-      id: Date.now(),
-      from: "me",
-      text: status,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      status: "sent",
-      type: "text"
-    };
-
-    setMessages((p) => [...p, newMsg]);
-
-    // Send via socket
-    if (socket) {
-      sendMessage(chatId, newMsg);
-    }
-  };
-
-  // File upload handling
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -172,11 +175,9 @@ export default function ChatScreen({ runner, market, userData, darkMode, toggleD
     };
     setMessages((p) => [...p, newMsg]);
 
-    // Reset file input
     event.target.value = "";
   };
 
-  // Voice recording handling
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -202,7 +203,6 @@ export default function ChatScreen({ runner, market, userData, darkMode, toggleD
         };
         setMessages((p) => [...p, newMsg]);
 
-        // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
         setRecordingTime(0);
       };
@@ -210,7 +210,6 @@ export default function ChatScreen({ runner, market, userData, darkMode, toggleD
       mediaRecorderRef.current.start();
       setIsRecording(true);
 
-      // Start timer
       recordingIntervalRef.current = setInterval(() => {
         setRecordingTime((prev) => prev + 1);
       }, 1000);
@@ -254,11 +253,6 @@ export default function ChatScreen({ runner, market, userData, darkMode, toggleD
     );
   };
 
-  useEffect(() => {
-    console.log('Runner data received:', runner);
-    console.log('UserData received:', userData);
-  }, [runner, userData]);
-
   return (
     <div className="h-full flex flex-col">
       <Header
@@ -277,25 +271,53 @@ export default function ChatScreen({ runner, market, userData, darkMode, toggleD
           </div>
         }
       />
+
       {/* Messages */}
       <div ref={listRef} className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 pb-24 bg-chat-pattern bg-gray-100 dark:bg-black-200">
         <div className="mx-auto max-w-3xl">
           {messages.map((m) => (
-            <Message
-              key={m.id}
-              m={m}
-              onDelete={handleDeleteMessage}
-              onEdit={handleEditMessage}
-              showCursor={false}
-            />
+            <React.Fragment key={m.id}>
+              {m.type !== "invoice" && m.type !== "tracking" && (
+                <Message
+                  m={m}
+                  onDelete={handleDeleteMessage}
+                  onEdit={handleEditMessage}
+                  showCursor={false}
+                />
+              )}
+
+              {m.type === "invoice" && m.invoiceData && (
+                <div className="my-2">
+                  <InvoiceScreen
+                    darkMode={darkMode}
+                    invoiceData={m.invoiceData}
+                    runnerData={runner}
+                    socket={socket}
+                    chatId={chatId}
+                    userId={userData?._id}
+                    runnerId={runner?._id}
+                    onAcceptSuccess={() => {
+                      console.log("Invoice accepted successfully");
+                    }}
+                    onDeclineSuccess={() => {
+                      console.log("Invoice declined successfully");
+                    }}
+                  />
+                </div>
+              )}
+
+              {m.type === "tracking" && m.trackingData && (
+                <div className="my-2">
+                  <TrackDeliveryScreen
+                    darkMode={darkMode}
+                    trackingData={m.trackingData}
+                  />
+                </div>
+              )}
+            </React.Fragment>
           ))}
         </div>
       </div>
-
-
-
-      {/* Status Quick Replies for Runners */}
-      {/* <StatusQuickReplies onSelect={handleStatusSelect} /> */}
 
       {/* Message Input */}
       <div className="w-full bg-gray-100 dark:bg-black-200 px-4 py-4">
@@ -316,7 +338,6 @@ export default function ChatScreen({ runner, market, userData, darkMode, toggleD
             onAttachClick={() => fileInputRef.current?.click()}
           />
 
-          {/* Hidden file input */}
           <input
             type="file"
             ref={fileInputRef}
@@ -326,8 +347,6 @@ export default function ChatScreen({ runner, market, userData, darkMode, toggleD
           />
         </div>
       </div>
-
-
     </div>
   );
 }

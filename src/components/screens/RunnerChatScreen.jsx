@@ -55,11 +55,15 @@ export default function RunnderChatScreen({
   showOrderFlow,
   setShowOrderFlow,
   handleOrderStatusClick,
+  completedOrderStatuses,
+  setCompletedOrderStatuses,
+
   // Attachment flow props
   isAttachFlowOpen,
   setIsAttachFlowOpen,
   handleLocationClick,
-  handleAttachClick
+  handleAttachClick,
+
 }) {
   const listRef = useRef(null);
 
@@ -78,10 +82,10 @@ export default function RunnderChatScreen({
             <ChevronLeft className="h-5 w-5" />
           </IconButton>
 
-          <Avatar 
+          <Avatar
             src={isChatActive && selectedUser ? selectedUser.avatar : active.avatar}
             alt={isChatActive && selectedUser ? selectedUser.firstName : active.name}
-            size="sm" 
+            size="sm"
           />
 
           <div className="truncate">
@@ -123,8 +127,8 @@ export default function RunnderChatScreen({
       <div ref={listRef} className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 bg-chat-pattern bg-gray-100 dark:bg-black-200">
         <div className="mx-auto max-w-3xl">
           {messages.map((m) => (
-            <Message 
-              key={m.id} 
+            <Message
+              key={m.id}
               m={m}
               canResendOtp={canResendOtp}
               onMessageClick={() => handleMessageClick(m)}
@@ -211,10 +215,17 @@ export default function RunnderChatScreen({
             onClose={() => setShowOrderFlow(false)}
             orderData={{
               deliveryLocation: selectedUser?.deliveryLocation || "No 90 alisquare ikeja mobolaji estate",
-              pickupLocation: selectedUser?.pickupLocation || "Pickup Location"
+              pickupLocation: selectedUser?.pickupLocation || "Pickup Location",
+              userData: selectedUser, 
+              chatId: `user-${selectedUser?._id}-runner-${runnerId}`, 
+              runnerId: runnerId,
+              userId: selectedUser?._id
             }}
             darkMode={dark}
             onStatusClick={handleOrderStatusClick}
+            completedStatuses={completedOrderStatuses}
+            setCompletedStatuses={setCompletedOrderStatuses}
+            socket={socket}
           />
         )}
 

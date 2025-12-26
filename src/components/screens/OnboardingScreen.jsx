@@ -179,7 +179,17 @@ export default function OnboardingScreen({ userType, onComplete, darkMode, toggl
     setTimeout(() => {
       setMessages(prev => [...prev, secondOtpMessage]);
       setShowOtpStep(true);
-    }, 1000);
+    }, 2000);
+
+    const progressMessage = {
+      id: Date.now() + 1,
+      from: "them",
+      text: "In progress...",
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      status: "delivered",
+    };
+
+    setMessages(prev => [...prev, progressMessage]);
 
     // Enable resend after 30 seconds
     setTimeout(() => {

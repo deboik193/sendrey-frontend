@@ -37,11 +37,10 @@ export default function ChatScreen({ runner, market, userData, darkMode, toggleD
   const audioChunksRef = useRef([]);
   const recordingIntervalRef = useRef(null);
 
-  const SOCKET_URL = "http://localhost:4001";
-  const { socket, joinChat, sendMessage, isConnected } = useSocket(SOCKET_URL);
   const [showTrackDelivery, setShowTrackDelivery] = useState(false);
   const [trackingData, setTrackingData] = useState(null);
 
+  const { socket, joinChat, sendMessage, isConnected } = useSocket();
 
   const chatId = userData?._id && runner?._id
     ? `user-${userData._id}-runner-${runner._id}`
@@ -84,12 +83,12 @@ export default function ChatScreen({ runner, market, userData, darkMode, toggleD
         },
         (msg) => {
           // Real-time messages come in normally
-          if (msg.senderId !== userData?._id) {
-            const formattedMsg = {
-              ...msg,
-              from: msg.from === 'system' ? 'system' : 'them'
-            };
-            setMessages((prev) => [...prev, formattedMsg]);
+          if (msg.senderId !== userData._id) {
+            setMessages((prev) => {
+              const exists = prev.some(m => m.id === msg.id || (m.text === msg.text && m.time === msg.time));
+              if (exists) return prev;
+              return [...prev, { ...msg, from: msg.from === 'system' ? 'system' : 'them' }];
+            });
           }
         }
       );

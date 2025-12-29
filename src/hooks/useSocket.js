@@ -1,84 +1,98 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import io from 'socket.io-client';
 
-export const useSocket = (SOCKET_URL) => {
-  const socketRef = useRef(null);
+// const SOCKET_URL = process.env.REACT_APP_SOCKET_URL_LOCAL;
+const SOCKET_URL = "http://localhost:4001";
+console.log("Connecting to:", SOCKET_URL);
+
+export const useSocket = () => {
+  const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
+  const socketRef = useRef(null);
 
   useEffect(() => {
-    if (!SOCKET_URL) return;
+    // Prevent multiple connections
+    if (socketRef.current) return;
 
-    socketRef.current = io(SOCKET_URL);
+    const s = io(SOCKET_URL, {
+      transports: ['websocket'],
+      reconnectionAttempts: 5,
+    });
 
-    socketRef.current.on('connect', () => {
-      console.log('✅ Socket connected:', socketRef.current.id);
+    s.on('connect', () => {
+      console.log('✅ Socket connected:', s.id);
+      socketRef.current = s;
+      setSocket(s);
       setIsConnected(true);
     });
 
-    socketRef.current.on('disconnect', () => {
+    s.on('disconnect', () => {
       console.log('❌ Socket disconnected');
       setIsConnected(false);
     });
 
+    s.on('connect_error', (error) => {
+      console.error('Socket Connection Error:', error);
+    });
+
     return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
+      if (s) {
+        s.disconnect();
+        socketRef.current = null;
       }
     };
-  }, [SOCKET_URL]);
+  }, []);
 
   const joinRunnerRoom = useCallback((runnerId, serviceType) => {
-    if (socketRef.current && isConnected) {
+    if (socketRef.current?.connected) {
       socketRef.current.emit('joinRunnerRoom', { runnerId, serviceType });
       console.log(`Joining runner room: runners-${serviceType}`);
     }
-  }, [socketRef.current, isConnected]);
+  }, []);
 
-  // In useSocket.js - joinChat function
   const joinChat = useCallback((chatId, onChatHistory, onMessage) => {
-    if (!socketRef.current || !isConnected) return;
+    const s = socketRef.current;
+    if (!s?.connected) return;
 
-    // Remove previous listeners to avoid duplicates
-    socketRef.current.off('chatHistory');
-    socketRef.current.off('message');
+    s.off('chatHistory');
+    s.off('message');
 
-    socketRef.current.emit('joinChat', chatId);
-
-    socketRef.current.on('chatHistory', onChatHistory);
-    socketRef.current.on('message', onMessage);
+    s.emit('joinChat', chatId);
+    s.on('chatHistory', onChatHistory);
+    s.on('message', onMessage);
 
     console.log(`Joined chat: ${chatId}`);
-  }, [socketRef.current, isConnected]);
+  }, []);
 
   const sendMessage = useCallback((chatId, message) => {
-    if (socketRef.current && isConnected) {
+    if (socketRef.current?.connected) {
       socketRef.current.emit('sendMessage', { chatId, message });
     }
-  }, [socketRef.current, isConnected]);
+  }, []);
 
   const pickService = useCallback((requestId, runnerId, runnerName) => {
-    if (socketRef.current && isConnected) {
+    if (socketRef.current?.connected) {
       socketRef.current.emit('pickService', { requestId, runnerId, runnerName });
     }
-  }, [socketRef.current, isConnected]);
+  }, []);
 
-  const onNewServiceRequest = (callback) => {
+  const onNewServiceRequest = useCallback((callback) => {
     if (socketRef.current) {
       socketRef.current.on('newServiceRequest', callback);
     }
-  };
+  }, []);
 
-  const onServicePicked = (callback) => {
+  const onServicePicked = useCallback((callback) => {
     if (socketRef.current) {
       socketRef.current.on('servicePicked', callback);
     }
-  };
+  }, []);
 
-  const onExistingRequests = (callback) => {
+  const onExistingRequests = useCallback((callback) => {
     if (socketRef.current) {
       socketRef.current.on('existingRequests', callback);
     }
-  };
+  }, []);
 
   const onRunnerAccepted = useCallback((callback) => {
     if (socketRef.current) {
@@ -87,7 +101,7 @@ export const useSocket = (SOCKET_URL) => {
   }, []);
 
   return {
-    socket: socketRef.current,
+    socket,
     isConnected,
     joinRunnerRoom,
     joinChat,
@@ -96,5 +110,6 @@ export const useSocket = (SOCKET_URL) => {
     onNewServiceRequest,
     onServicePicked,
     onExistingRequests,
+    onRunnerAccepted
   };
 };

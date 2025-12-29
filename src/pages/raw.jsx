@@ -71,9 +71,8 @@ export default function WhatsAppLikeChat() {
   // flows
   const [showOrderFlow, setShowOrderFlow] = useState(false);
   const [isAttachFlowOpen, setIsAttachFlowOpen] = useState(false);
-
-  const SOCKET_URL = "http://localhost:4001";
-  const { socket, joinRunnerRoom, joinChat, sendMessage, isConnected } = useSocket(SOCKET_URL);
+  
+  const { socket, joinRunnerRoom, joinChat, sendMessage, isConnected } = useSocket();
 
   const [showUserSheet, setShowUserSheet] = useState(false);
   const [runnerId, setRunnerId] = useState(null);

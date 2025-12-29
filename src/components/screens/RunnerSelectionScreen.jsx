@@ -24,8 +24,7 @@ export default function RunnerSelectionScreen({
   const dispatch = useDispatch();
   const { nearbyRunners, loading, error } = useSelector((state) => state.runners);
 
-  const SOCKET_URL = "http://localhost:4001";
-  const { socket, isConnected } = useSocket(SOCKET_URL);
+  const { socket, joinChat, sendMessage, isConnected } = useSocket();
 
   const handleClose = useCallback(() => {
     setIsVisible(false);

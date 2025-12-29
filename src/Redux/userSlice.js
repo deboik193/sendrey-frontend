@@ -21,16 +21,12 @@ export const injectStore = (_store) => {
 api.interceptors.request.use(
   (config) => {
     const token = store?.getState()?.auth?.token;
-    console.log('Interceptor token check:', token ? 'Token found' : 'No token');
-
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 api.interceptors.response.use(
@@ -43,250 +39,144 @@ api.interceptors.response.use(
   }
 );
 
-// Get own profile
-export const getProfile = createAsyncThunk(
-  "users/getProfile",
-  async (_, { rejectWithValue }) => {
-    try {
-      const res = await api.get('/profile');
-      return res.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch profile"
-      );
-    }
-  }
-);
+// --- UTILITY FOR ERRORS ---
+const getErrorMessage = (error) => error.response?.data?.message || "Operation failed";
 
-// Get public profile by userId
-export const getPublicProfile = createAsyncThunk(
-  "users/getPublicProfile",
-  async (userId, { rejectWithValue }) => {
-    try {
-      const res = await api.get(`/public-profile/${userId}`);
-      return res.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch public profile"
-      );
-    }
-  }
-);
+// --- THUNKS ---
 
-// Get user by userId (requires ownership or admin)
-export const getUserById = createAsyncThunk(
-  "users/getUserById",
-  async (userId, { rejectWithValue }) => {
-    try {
-      const res = await api.get(`/${userId}`);
-      return res.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch user"
-      );
-    }
-  }
-);
+export const getProfile = createAsyncThunk("users/getProfile", async (_, { rejectWithValue }) => {
+  try {
+    const res = await api.get('/profile');
+    return res.data;
+  } catch (error) { return rejectWithValue(getErrorMessage(error)); }
+});
 
-// Update profile
-export const updateProfile = createAsyncThunk(
-  "users/updateProfile",
-  async (profileData, { rejectWithValue }) => {
-    try {
-      const res = await api.put('/profile', profileData);
-      return res.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to update profile"
-      );
-    }
-  }
-);
+export const getPublicProfile = createAsyncThunk("users/getPublicProfile", async (userId, { rejectWithValue }) => {
+  try {
+    const res = await api.get(`/public-profile/${userId}`);
+    return res.data;
+  } catch (error) { return rejectWithValue(getErrorMessage(error)); }
+});
 
-// Update user by ID (requires ownership or admin)
-export const updateUserById = createAsyncThunk(
-  "users/updateUserById",
-  async ({ userId, profileData }, { rejectWithValue }) => {
-    try {
-      const res = await api.put(`/${userId}`, profileData);
-      return res.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to update user"
-      );
-    }
-  }
-);
+export const getUserById = createAsyncThunk("users/getUserById", async (userId, { rejectWithValue }) => {
+  try {
+    const res = await api.get(`/${userId}`);
+    return res.data;
+  } catch (error) { return rejectWithValue(getErrorMessage(error)); }
+});
 
-// Update notification preferences
-export const updateNotificationPreferences = createAsyncThunk(
-  "users/updateNotifications",
-  async (preferences, { rejectWithValue }) => {
-    try {
-      const res = await api.put('/notification-preferences', preferences);
-      return res.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to update notification preferences"
-      );
-    }
-  }
-);
+export const updateProfile = createAsyncThunk("users/updateProfile", async (profileData, { rejectWithValue }) => {
+  try {
+    const res = await api.put('/profile', profileData);
+    return res.data;
+  } catch (error) { return rejectWithValue(getErrorMessage(error)); }
+});
 
-// List all users (admin/manager only)
-export const listUsers = createAsyncThunk(
-  "users/listUsers",
-  async (queryParams = {}, { rejectWithValue }) => {
-    try {
-      const params = new URLSearchParams();
-      Object.entries(queryParams).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          params.append(key, value);
-        }
-      });
+export const updateUserById = createAsyncThunk("users/updateUserById", async ({ userId, profileData }, { rejectWithValue }) => {
+  try {
+    const res = await api.put(`/${userId}`, profileData);
+    return res.data;
+  } catch (error) { return rejectWithValue(getErrorMessage(error)); }
+});
 
-      const queryString = params.toString();
-      const res = await api.get(`/${queryString ? `?${queryString}` : ''}`);
-      return res.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch users"
-      );
-    }
-  }
-);
+export const updateNotificationPreferences = createAsyncThunk("users/updateNotifications", async (preferences, { rejectWithValue }) => {
+  try {
+    const res = await api.put('/notification-preferences', preferences);
+    return res.data;
+  } catch (error) { return rejectWithValue(getErrorMessage(error)); }
+});
 
-// Search users
-export const searchUsers = createAsyncThunk(
-  "users/searchUsers",
-  async (queryParams, { rejectWithValue }) => {
-    try {
-      const params = new URLSearchParams();
-      Object.entries(queryParams).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          params.append(key, value);
-        }
-      });
+export const listUsers = createAsyncThunk("users/listUsers", async (queryParams = {}, { rejectWithValue }) => {
+  try {
+    const params = new URLSearchParams();
+    Object.entries(queryParams).forEach(([k, v]) => { if (v) params.append(k, v); });
+    const res = await api.get(`/${params.toString() ? `?${params.toString()}` : ''}`);
+    return res.data;
+  } catch (error) { return rejectWithValue(getErrorMessage(error)); }
+});
 
-      const res = await api.get(`/search?${params.toString()}`);
-      return res.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to search users"
-      );
-    }
-  }
-);
+export const searchUsers = createAsyncThunk("users/searchUsers", async (queryParams, { rejectWithValue }) => {
+  try {
+    const params = new URLSearchParams();
+    Object.entries(queryParams).forEach(([k, v]) => { if (v) params.append(k, v); });
+    const res = await api.get(`/search?${params.toString()}`);
+    return res.data;
+  } catch (error) { return rejectWithValue(getErrorMessage(error)); }
+});
 
-// Get nearby user requests
-export const fetchNearbyUserRequests = createAsyncThunk(
-  "users/fetchNearbyUserRequests",
-  async ({ latitude, longitude, serviceType, fleetType }, { rejectWithValue }) => {
-    try {
-      const params = new URLSearchParams({
-        latitude: latitude.toString(),
-        longitude: longitude.toString(),
-      });
+export const fetchNearbyUserRequests = createAsyncThunk("users/fetchNearby", async (coords, { rejectWithValue }) => {
+  try {
+    const params = new URLSearchParams(coords);
+    const res = await api.get(`/nearby-users?${params.toString()}`);
+    return res.data;
+  } catch (error) { return rejectWithValue(getErrorMessage(error)); }
+});
 
-      if (serviceType) params.append("serviceType", serviceType);
-      if (fleetType) params.append("fleetType", fleetType);
+export const updateUserRole = createAsyncThunk("users/updateUserRole", async ({ userId, role }, { rejectWithValue }) => {
+  try {
+    const res = await api.patch(`/${userId}/role`, { role });
+    return res.data;
+  } catch (error) { return rejectWithValue(getErrorMessage(error)); }
+});
 
-      console.log('serviceType being fetched', serviceType);
-      const res = await api.get(`/nearby-users?${params.toString()}`);
+export const updateUserStatus = createAsyncThunk("users/updateUserStatus", async ({ userId, status }, { rejectWithValue }) => {
+  try {
+    const res = await api.patch(`/${userId}/status`, { status });
+    return res.data;
+  } catch (error) { return rejectWithValue(getErrorMessage(error)); }
+});
 
-      // console.log("Nearby Users Response:", res.data);
-      return res.data;
-    } catch (error) {
-      console.error("Error fetching nearby users:", error);
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch nearby users"
-      );
-    }
-  }
-);
+export const deleteUser = createAsyncThunk("users/deleteUser", async (userId, { rejectWithValue }) => {
+  try {
+    const res = await api.delete(`/${userId}`);
+    return { userId, ...res.data };
+  } catch (error) { return rejectWithValue(getErrorMessage(error)); }
+});
 
-// Update user role (admin only)
-export const updateUserRole = createAsyncThunk(
-  "users/updateUserRole",
-  async ({ userId, role }, { rejectWithValue }) => {
-    try {
-      const res = await api.patch(`/${userId}/role`, { role });
-      return res.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to update user role"
-      );
-    }
-  }
-);
+export const bulkUserAction = createAsyncThunk("users/bulkUserAction", async (data, { rejectWithValue }) => {
+  try {
+    const res = await api.post('/bulk/action', data);
+    return res.data;
+  } catch (error) { return rejectWithValue(getErrorMessage(error)); }
+});
 
-// Update user status
-export const updateUserStatus = createAsyncThunk(
-  "users/updateUserStatus",
-  async ({ userId, status }, { rejectWithValue }) => {
-    try {
-      const res = await api.patch(`/${userId}/status`, { status });
-      return res.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to update user status"
-      );
-    }
-  }
-);
+export const exportUsers = createAsyncThunk("users/exportUsers", async (params, { rejectWithValue }) => {
+  try {
+    const res = await api.post('/export', params);
+    return res.data;
+  } catch (error) { return rejectWithValue(getErrorMessage(error)); }
+});
 
-// Delete user (super-admin only)
-export const deleteUser = createAsyncThunk(
-  "users/deleteUser",
-  async (userId, { rejectWithValue }) => {
-    try {
-      const res = await api.delete(`/${userId}`);
-      return { userId, ...res.data };
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to delete user"
-      );
-    }
-  }
-);
+// --- NEW LOCATION ACTIONS ---
+export const fetchLocations = createAsyncThunk('locations/fetchAll', async (_, { rejectWithValue }) => {
+  try {
+    const res = await api.get('/locations');
+    return res.data;
+  } catch (error) { return rejectWithValue(getErrorMessage(error)); }
+});
 
-// Bulk user action (admin only)
-export const bulkUserAction = createAsyncThunk(
-  "users/bulkUserAction",
-  async (actionData, { rejectWithValue }) => {
-    try {
-      const res = await api.post('/bulk/action', actionData);
-      return res.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to perform bulk action"
-      );
-    }
-  }
-);
+export const addLocation = createAsyncThunk('locations/add', async (data, { rejectWithValue }) => {
+  try {
+    const res = await api.post('/locations', data);
+    return res.data;
+  } catch (error) { return rejectWithValue(getErrorMessage(error)); }
+});
 
-// Export users (admin/manager/sales)
-export const exportUsers = createAsyncThunk(
-  "users/exportUsers",
-  async (exportParams, { rejectWithValue }) => {
-    try {
-      const res = await api.post('/export', exportParams);
-      return res.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to export users"
-      );
-    }
-  }
-);
+export const deleteLocation = createAsyncThunk('locations/delete', async (id, { rejectWithValue }) => {
+  try {
+    const res = await api.delete(`/locations/${id}`);
+    return res.data;
+  } catch (error) { return rejectWithValue(getErrorMessage(error)); }
+});
 
-// ===== REDUX SLICE =====
+// --- SLICE ---
 
 const userSlice = createSlice({
   name: "users",
   initialState: {
     profile: null,
     users: [],
+    savedLocations: [],
     selectedUser: null,
     nearbyUsers: [],
     searchResults: [],
@@ -296,232 +186,110 @@ const userSlice = createSlice({
     exportLoading: false,
   },
   reducers: {
-    clearUsers(state) {
-      state.users = [];
-      state.searchResults = [];
-      state.error = null;
-    },
-    clearError(state) {
-      state.error = null;
-    },
-    setSelectedUser(state, action) {
-      state.selectedUser = action.payload;
-    },
+    clearUsers(state) { state.users = []; state.searchResults = []; state.error = null; },
+    clearError(state) { state.error = null; },
+    setSelectedUser(state, action) { state.selectedUser = action.payload; },
   },
   extraReducers: (builder) => {
     builder
-      // Get Profile
-      .addCase(getProfile.pending, (state) => {
-        state.loading = true;
+      // Unified Loading Handler
+      .addMatcher((action) => action.type.endsWith('/pending'), (state, action) => {
+        if (action.type.includes('exportUsers')) state.exportLoading = true;
+        else state.loading = true;
         state.error = null;
       })
+      // Unified Error Handler
+      .addMatcher((action) => action.type.endsWith('/rejected'), (state, action) => {
+        state.loading = false;
+        state.exportLoading = false;
+        state.error = action.payload;
+      })
+      // Get Profile
       .addCase(getProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.profile = action.payload.data?.user || action.payload.user || action.payload.data;
       })
-      .addCase(getProfile.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
 
-      // Get Public Profile
-      .addCase(getPublicProfile.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
+      // Public Profile / User By ID
       .addCase(getPublicProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.selectedUser = action.payload.data?.user || action.payload.user || action.payload.data;
-      })
-      .addCase(getPublicProfile.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      // Get User By ID
-      .addCase(getUserById.pending, (state) => {
-        state.loading = true;
-        state.error = null;
       })
       .addCase(getUserById.fulfilled, (state, action) => {
         state.loading = false;
         state.selectedUser = action.payload.data?.user || action.payload.user || action.payload.data;
       })
-      .addCase(getUserById.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      // Update Profile
-      .addCase(updateProfile.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
+      
+      // Update Actions
       .addCase(updateProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.profile = action.payload.data?.user || action.payload.user || action.payload.data;
-        state.token = action.payload.data?.token || action.payload.token;
-      })
-      .addCase(updateProfile.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      // Update User By ID
-      .addCase(updateUserById.pending, (state) => {
-        state.loading = true;
-        state.error = null;
       })
       .addCase(updateUserById.fulfilled, (state, action) => {
         state.loading = false;
         const user = action.payload.data?.user || action.payload.user || action.payload.data;
         state.selectedUser = user;
-        // Update in users list if present
-        const index = state.users.findIndex(u => u._id === user._id);
-        if (index !== -1) {
-          state.users[index] = user;
-        }
-      })
-      .addCase(updateUserById.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      // Update Notification Preferences
-      .addCase(updateNotificationPreferences.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        const idx = state.users.findIndex(u => u._id === user._id);
+        if (idx !== -1) state.users[idx] = user;
       })
       .addCase(updateNotificationPreferences.fulfilled, (state, action) => {
         state.loading = false;
         state.profile = action.payload.data?.user || action.payload.user || action.payload.data;
       })
-      .addCase(updateNotificationPreferences.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
 
-      // List Users
-      .addCase(listUsers.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
+      // Lists & Search
       .addCase(listUsers.fulfilled, (state, action) => {
         state.loading = false;
-        const responseData = action.payload.data || action.payload;
-        state.users = responseData.users || responseData;
-        state.totalUsers = responseData.total || responseData.length;
-      })
-      .addCase(listUsers.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      // Search Users
-      .addCase(searchUsers.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        const resp = action.payload.data || action.payload;
+        state.users = resp.users || resp;
+        state.totalUsers = resp.total || resp.length;
       })
       .addCase(searchUsers.fulfilled, (state, action) => {
         state.loading = false;
-        const responseData = action.payload.data || action.payload;
-        state.searchResults = responseData.users || responseData;
-      })
-      .addCase(searchUsers.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      // Get Users requesting runner services
-      .addCase(fetchNearbyUserRequests.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        const resp = action.payload.data || action.payload;
+        state.searchResults = resp.users || resp;
       })
       .addCase(fetchNearbyUserRequests.fulfilled, (state, action) => {
         state.loading = false;
-        const responseData = action.payload.data || action.payload;
-        state.nearbyUsers = responseData.users || [];
-        state.count = responseData.count || 0;
-      })
-      .addCase(fetchNearbyUserRequests.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
+        const resp = action.payload.data || action.payload;
+        state.nearbyUsers = resp.users || [];
       })
 
-      // Update User Role
-      .addCase(updateUserRole.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
+      // Admin Actions
       .addCase(updateUserRole.fulfilled, (state, action) => {
         state.loading = false;
         const user = action.payload.data?.user || action.payload.user || action.payload.data;
-        const index = state.users.findIndex(u => u._id === user._id);
-        if (index !== -1) {
-          state.users[index] = user;
-        }
-      })
-      .addCase(updateUserRole.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      // Update User Status
-      .addCase(updateUserStatus.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        const idx = state.users.findIndex(u => u._id === user._id);
+        if (idx !== -1) state.users[idx] = user;
       })
       .addCase(updateUserStatus.fulfilled, (state, action) => {
         state.loading = false;
         const user = action.payload.data?.user || action.payload.user || action.payload.data;
-        const index = state.users.findIndex(u => u._id === user._id);
-        if (index !== -1) {
-          state.users[index] = user;
-        }
-      })
-      .addCase(updateUserStatus.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      // Delete User
-      .addCase(deleteUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        const idx = state.users.findIndex(u => u._id === user._id);
+        if (idx !== -1) state.users[idx] = user;
       })
       .addCase(deleteUser.fulfilled, (state, action) => {
         state.loading = false;
         state.users = state.users.filter(u => u._id !== action.payload.userId);
       })
-      .addCase(deleteUser.rejected, (state, action) => {
+      .addCase(bulkUserAction.fulfilled, (state) => { state.loading = false; })
+      .addCase(exportUsers.fulfilled, (state) => { state.exportLoading = false; })
+      
+      // --- LOCATIONS ---
+      .addCase(fetchLocations.fulfilled, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        const resp = action.payload.data || action.payload;
+        state.savedLocations = resp.locations || resp;
       })
-
-      // Bulk User Action
-      .addCase(bulkUserAction.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(bulkUserAction.fulfilled, (state, action) => {
+      .addCase(addLocation.fulfilled, (state, action) => {
         state.loading = false;
+        const resp = action.payload.data || action.payload;
+        state.savedLocations = resp.locations || resp;
       })
-      .addCase(bulkUserAction.rejected, (state, action) => {
+      .addCase(deleteLocation.fulfilled, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
-      })
-
-      // Export Users
-      .addCase(exportUsers.pending, (state) => {
-        state.exportLoading = true;
-        state.error = null;
-      })
-      .addCase(exportUsers.fulfilled, (state) => {
-        state.exportLoading = false;
-      })
-      .addCase(exportUsers.rejected, (state, action) => {
-        state.exportLoading = false;
-        state.error = action.payload;
+        const resp = action.payload.data || action.payload;
+        state.savedLocations = resp.locations || resp;
       });
   },
 });

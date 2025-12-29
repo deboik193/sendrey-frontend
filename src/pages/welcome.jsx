@@ -8,7 +8,7 @@ import ServiceSelectionScreen from "../components/screens/ServiceSelectionScreen
 import VehicleSelectionScreen from "../components/screens/VehicleSelectionScreen";
 import RunnerSelectionScreen from "../components/screens/RunnerSelectionScreen";
 import RunnerDashboardScreen from "../components/screens/RunnerDashboardScreen";
-import SavedLocationScreen from "../components/screens/savedLocationScreen";
+import SavedLocationScreen from "../components/screens/SavedLocationScreen";
 
 import ChatScreen from "../components/screens/ChatScreen";
 import { useDispatch } from "react-redux";
@@ -232,7 +232,7 @@ export const Welcome = () => {
                 onClose={() => setShowRunnerSheet(false)}
             />
 
-            {/* FIXED: Use isSavedLocationsOpen instead of showSavedLocationSheet */}
+            
             <SavedLocationScreen
                 isOpen={isSavedLocationsOpen}
                 onDismiss={() => {

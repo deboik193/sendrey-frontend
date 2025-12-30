@@ -236,7 +236,7 @@ export default function WhatsAppLikeChat() {
     }
   }, [registrationComplete]);
 
-  // Silent search for nearby service requests
+  // Silent search for nearby service requests, polling
   useEffect(() => {
     const searchNearbyRequests = () => {
       if (!runnerLocation || !serviceTypeRef.current) return;
@@ -249,7 +249,10 @@ export default function WhatsAppLikeChat() {
       };
 
       console.log("Searching for nearby requests:", searchParams);
-      dispatch(fetchNearbyUserRequests(searchParams));
+
+      dispatch(
+        fetchNearbyUserRequests(searchParams)
+      );
     };
 
     if (registrationComplete && runnerLocation && serviceTypeRef.current && !isChatActive) {

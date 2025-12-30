@@ -76,21 +76,22 @@ export default function VehicleSelectionScreen({
 
           // Update profile with serviceType and fleetType
           try {
-            await dispatch(updateProfile({
-              serviceType: selectedService,
-              fleetType: type,
-
-              // Location details
+            console.log('Sending currentRequest:', {
               pickupLocation: service?.pickupLocation,
-              deliveryLocation: service?.deliveryLocation,
+              deliveryLocation: service?.deliveryLocation
+            });
 
-              // PHONE UPDATES
-              // pickupPhone: service?.pickupPhone,
-              // dropoffPhone: service?.dropoffPhone,
+            await dispatch(updateProfile({
+              currentRequest: {
+                serviceType: selectedService,
+                fleetType: type,
+                pickupLocation: service?.pickupLocation,
+                deliveryLocation: service?.deliveryLocation,
+                pickupPhone: service?.pickupPhone,
+                dropoffPhone: service?.dropoffPhone,
+                pickupCoordinates: service?.pickupCoordinates,
+              }
 
-              // raw coordinates
-              pickupCoordinates: service?.pickupCoordinates,
-              deliveryCoordinates: service?.deliveryCoordinates
             })).unwrap();
             console.log(`User profile updated with service ${selectedService} and fleet type`);
           } catch (error) {

@@ -100,6 +100,10 @@ export default function MarketSelectionScreen({
   const [showPhoneInput, setShowPhoneInput] = useState(false);
   const [pendingDeliverySelection, setPendingDeliverySelection] = useState(false);
 
+  const deliveryLocationRef = useRef(null);
+  const pickupLocationRef = useRef(null);
+
+
   useEffect(() => {
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
@@ -122,6 +126,8 @@ export default function MarketSelectionScreen({
     const place = pendingPlace;
     const locationText = place.name || place.address;
 
+    console.log('🎯 finalizeSelection called - step:', currentStep, 'location:', locationText);
+
     if (shouldSave) {
       try {
 
@@ -139,12 +145,17 @@ export default function MarketSelectionScreen({
     // Proceed with your original logic
     if (currentStep === "delivery-location") {
       setDeliveryLocation(locationText);
+      deliveryLocationRef.current = locationText;
       send("map", locationText, "delivery");
+
     } else if (currentStep === "pickup-location") {
       setPickupLocation(locationText);
+      pickupLocationRef.current = locationText;
       send("map", locationText, "pickup-location");
+
     } else {
       setPickupLocation(locationText);
+      pickupLocationRef.current = locationText;
       send("map", locationText, "market-location");
     }
 
@@ -268,13 +279,16 @@ export default function MarketSelectionScreen({
     } else if (source === "dropoff-phone") {
       // Complete - navigate to next screen
       setDropoffPhoneNumber(text);
+
+      console.log('deliveryLocation STATE:', deliveryLocation);
+
       onSelectMarket({
         serviceType: "pick-up",
-        pickupLocation: pickupLocation,
-        deliveryLocation: deliveryLocation,
+        pickupLocation: pickupLocationRef.current,
+        deliveryLocation: deliveryLocationRef.current,
         pickupPhone: pickupPhoneNumber,
         dropoffPhone: text,
-        pickupCoordinates: selectedPlace
+        pickupCoordinates: selectedPlace ? { lat: selectedPlace.lat, lng: selectedPlace.lng } : null
       });
     }
   };
@@ -296,12 +310,16 @@ export default function MarketSelectionScreen({
       setCurrentStep("delivery-location");
       setTimeout(() => setShowLocationButtons(true), 200);
     } else if (source === "delivery") {
+
+      console.log('deliveryLocation REF:', deliveryLocationRef.current);
+      console.log('pickupLocation REF:', pickupLocationRef.current);
+      
       // Complete - navigate to next screen
       onSelectMarket({
         serviceType: "run-errand",
-        marketLocation: pickupLocation,
-        deliveryLocation: deliveryLocation,
-        pickupCoordinates: selectedPlace
+        pickupLocation: pickupLocationRef.current,
+        deliveryLocation: deliveryLocationRef.current,
+        pickupCoordinates: selectedPlace ? { lat: selectedPlace.lat, lng: selectedPlace.lng } : null
       });
     }
   };
@@ -372,7 +390,7 @@ export default function MarketSelectionScreen({
 
           {showSaveConfirm && (
             <div className="absolute inset-0 z-[60] flex items-center justify-center p-6 bg-black/50 backdrop-blur-sm">
-              <div className={`w-full max-w-xs p-6 rounded-2xl shadow-xl ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-800'}`}>
+              <div className={`w-full max-w-xs p-6 rounded-2xl shadow-xl ${darkMode ? 'bg-black-100 text-white' : 'bg-white text-gray-800'}`}>
                 <div className="flex flex-col items-center text-center">
                   <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                     <Bookmark className="text-primary" size={24} />

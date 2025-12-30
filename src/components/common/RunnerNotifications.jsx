@@ -54,20 +54,21 @@ export default function RunnerNotifications({
 
     if (socket && isConnected) {
       try {
-        console.log("📤 Emitting acceptRunnerRequest to server...");
+        console.log("Emitting acceptRunnerRequest to server...");
         socket.emit("acceptRunnerRequest", {
           runnerId,
           userId: user._id,
           chatId,
-          serviceType: user.serviceType
+          serviceType: user.currentRequest?.serviceType || user.serviceType
         });
 
+        console.log("current request payload",user.currentRequest)
         console.log("✅ acceptRunnerRequest event emitted");
       } catch (error) {
-        console.error("❌ Error emitting acceptRunnerRequest:", error);
+        console.error("Error emitting acceptRunnerRequest:", error);
       }
     } else {
-      console.error("❌ Socket not connected or not available");
+      console.error("Socket not connected or not available");
     }
 
     setIsOpen(false);
@@ -150,12 +151,12 @@ export default function RunnerNotifications({
                               </div>
                               <div>
                                 <p className="text-lg">Location: </p>
-                                <div className="border border-2 rounded-md border-gray-300 h-10 w-100 p-2 text-start text-sm text-blue-400"> No 12 dele, Town Square Lagos</div> {/* logo */}
+                                <div className="border border-2 rounded-md border-gray-300 h-10 w-100 p-2 text-start text-sm text-blue-400">{user.currentRequest?.pickupLocation || "No pickup address provided"}</div> {/* logo */}
                               </div>
                               <div>
                                 <p className="text-lg">Delivery Location: </p>
                                 <div className="flex items-center gap-2">
-                                  <div className="border border-2 rounded-md border-gray-300 h-10 w-100 p-2 text-start text-sm text-red-400"> No 40 dele, Allen Square-Otawu Lagos</div> <span><MapPin /></span>
+                                  <div className="border border-2 rounded-md border-gray-300 h-10 w-100 p-2 text-start text-sm text-red-400">{user.currentRequest?.deliveryLocation || "No delivery address provided"}</div> <span><MapPin /></span>
                                 </div>
                               </div>
                             </div>

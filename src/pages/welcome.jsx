@@ -129,8 +129,6 @@ export const Welcome = () => {
                         onSelectMarket={(location) => {
                             // clear state on successful navigation
                             setMarketScreenMessages([]);
-                            setPickupLocation(null);
-                            setDeliveryLocation(null);
 
                             setSelectedMarket(location);
                             navigateTo("vehicle_selection");
@@ -142,7 +140,7 @@ export const Welcome = () => {
             case "vehicle_selection":
                 return (
                     <VehicleSelectionScreen
-                        service={userData}
+                        service={selectedMarket}
                         selectedService={selectedService}
                         onSelectVehicle={(fleetType) => {
                             setSelectedFleetType(fleetType);

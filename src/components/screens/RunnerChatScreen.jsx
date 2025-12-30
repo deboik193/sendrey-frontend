@@ -214,8 +214,8 @@ export default function RunnerChatScreen({
             isOpen={showOrderFlow}
             onClose={() => setShowOrderFlow(false)}
             orderData={{
-              deliveryLocation: selectedUser?.deliveryLocation || "No 90 alisquare ikeja mobolaji estate",
-              pickupLocation: selectedUser?.pickupLocation || "Pickup Location",
+              deliveryLocation: selectedUser?.currentRequest?.deliveryLocation || "No address",
+              pickupLocation: selectedUser?.currentRequest?.pickupLocation || "No address",
               userData: selectedUser, 
               chatId: `user-${selectedUser?._id}-runner-${runnerId}`, 
               runnerId: runnerId,
